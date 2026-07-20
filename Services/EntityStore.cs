@@ -21,9 +21,16 @@ public sealed class EntityStore
 {
     private readonly string _rootFolder;
 
-    /// <summary>Uses the app's real sandboxed AppData local folder.</summary>
+    /// <summary>
+    /// Uses the app's AppData local folder. Deliberately uses plain .NET file
+    /// APIs rather than Windows.Storage.ApplicationData.Current, which
+    /// requires package identity and throws at runtime in an unpackaged,
+    /// self-contained build.
+    /// </summary>
     public EntityStore()
-        : this(Windows.Storage.ApplicationData.Current.LocalFolder.Path)
+        : this(Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "SecretLead"))
     {
     }
 
