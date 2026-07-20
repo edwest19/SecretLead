@@ -147,8 +147,11 @@ public sealed class BrowsePageViewModel : ObservableObject
 
     /// <summary>e.g. "Residential · 3 of 12" — the value comes from whatever the tag file calls its first tag, not literally "Category".</summary>
     public string CategoryPositionText => SelectedCategory is { } category
-        ? $"{category} · {_selectedCategoryIndex + 1} of {DistinctCategories.Count}"
+        ? $"{DisplayCategory(category)} · {_selectedCategoryIndex + 1} of {DistinctCategories.Count}"
         : "No records yet";
+
+    /// <summary>Records with a blank category value are grouped and shown under "None" rather than as blank text.</summary>
+    private static string DisplayCategory(string category) => category.Length == 0 ? "None" : category;
 
     /// <summary>The current tag file's first tag name, used as this section's label (README.md §4 — "Category" is only this demo's name for it).</summary>
     public string CategoryTagLabel => _tagFile?.CategoryTag ?? "Category";
@@ -249,6 +252,7 @@ public sealed class BrowsePageViewModel : ObservableObject
 
     public RelayCommand SaveEditorCommand { get; }
     public RelayCommand ClearAddFormCommand { get; }
+    public RelayCommand CancelEditorCommand { get; }
 
     public BrowsePageViewModel()
     {
@@ -287,6 +291,7 @@ public sealed class BrowsePageViewModel : ObservableObject
         EditRecordCommand = new RelayCommand(OpenEditRecord);
         SaveEditorCommand = new RelayCommand(SaveEditor);
         ClearAddFormCommand = new RelayCommand(ClearAddForm);
+        CancelEditorCommand = new RelayCommand(CancelEditor);
 
         ExportCommand = new RelayCommand(async () => await ExportAsync());
         PrintCommand = new RelayCommand(async () => await PrintAsync());
@@ -403,7 +408,7 @@ public sealed class BrowsePageViewModel : ObservableObject
             Records.Add(new RecordSummary
             {
                 Record = record,
-                CategoryValue = category,
+                CategoryValue = DisplayCategory(category),
                 NicknameValue = nickname,
             });
         }

@@ -197,12 +197,9 @@
             </Grid>
         </Border>
 
-        <!-- Editor overlay: Edit and Add share this — fields are always
-             editable, but the button set is deliberately minimal: OK is
-             always there, Clear only shows for Add. There's no Cancel
-             button by design (Escape closes without saving instead, see
-             Page_KeyDown) so a stray click can't discard or half-save
-             what was just typed. -->
+        <!-- Editor overlay: Edit and Add share this. OK and Cancel are
+             always there (Cancel and Escape — see Page_KeyDown — both close
+             without saving); Clear only shows for Add. -->
         <Border
             HorizontalAlignment="Right"
             VerticalAlignment="Stretch"
@@ -250,6 +247,7 @@
                         Content="Clear"
                         Command="{x:Bind ViewModel.ClearAddFormCommand}"
                         Visibility="{x:Bind Visible(ViewModel.IsAddingRecord), Mode=OneWay}" />
+                    <Button Content="Cancel" Command="{x:Bind ViewModel.CancelEditorCommand}" />
                 </StackPanel>
             </Grid>
         </Border>

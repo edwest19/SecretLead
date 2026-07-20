@@ -38,8 +38,8 @@ public sealed partial class BrowsePage : Page
         }
     }
 
-    // Edit/Add deliberately have no visible Cancel button (only OK is
-    // active, per the owner's spec) — Escape is the safety net instead.
+    // Escape mirrors the Cancel button as a keyboard shortcut for closing
+    // the editor without saving.
     private void Page_KeyDown(object sender, KeyRoutedEventArgs e)
     {
         if (e.Key == VirtualKey.Escape && ViewModel.IsEditorOpen)
