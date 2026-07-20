@@ -23,7 +23,7 @@ jobs:
 
       - name: Publish self-contained
         run: >
-          dotnet publish SecretLead\SecretLead.csproj
+          dotnet publish SecretLead.csproj
           -c Release -r win-x64 --self-contained true
           -p:WindowsPackageType=None
           -p:WindowsAppSDKSelfContained=true

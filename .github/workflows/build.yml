@@ -20,7 +20,7 @@ jobs:
           dotnet-version: 10.0.x
 
       - name: Restore
-        run: dotnet restore SecretLead\SecretLead.csproj
+        run: dotnet restore SecretLead.csproj
 
       - name: Build
-        run: dotnet build SecretLead\SecretLead.csproj -c Release --no-restore
+        run: dotnet build SecretLead.csproj -c Release --no-restore
