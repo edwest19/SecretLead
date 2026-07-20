@@ -7,16 +7,18 @@
 
 .DESCRIPTION
     Deletes every stored entity (<EntityName>.md / <EntityName>.txt) from
-    SecretLead's AppData LocalState folder. Existence-of-file is the whole
-    mechanism SecretLead uses to know what entities exist (README.md §6),
-    so removing these files is a complete, clean reset -- there's no other
-    index, cache, or database tracking anything.
+    SecretLead's AppData folder. Existence-of-file is the whole mechanism
+    SecretLead uses to know what entities exist (README.md §6), so removing
+    these files is a complete, clean reset -- there's no other index, cache,
+    or database tracking anything.
 
-    Finds AppData by matching the installed package's DisplayName
-    ("SecretLead"), not by a hardcoded path or package identity -- the
-    exact AppData folder name is derived from the package's Identity Name
-    and Publisher, which can change across builds/signing, so it's
-    resolved at runtime instead of assumed.
+    SecretLead is distributed as an unpackaged, self-contained app (no
+    MSIX, no package identity), so its AppData folder is a plain
+    %LOCALAPPDATA%\SecretLead folder, resolved via
+    Environment.SpecialFolder.LocalApplicationData -- not a packaged
+    %LOCALAPPDATA%\Packages\<PackageFamilyName>\LocalState folder. This
+    matches EntityStore's parameterless constructor exactly
+    (Services/EntityStore.cs).
 
 .PARAMETER Force
     Skip the confirmation prompt.
@@ -37,31 +39,7 @@ param(
     [switch]$Force
 )
 
-# Match by DisplayName rather than package Name/Identity: SecretLead's
-# Package.appxmanifest currently uses a template-default GUID as its
-# Identity Name (not "SecretLead"), and that -- along with the Publisher --
-# is exactly what's baked into the AppData folder name. DisplayName is the
-# stable, human-meaningful thing to match on regardless of what identity
-# or signing changes happen to the package over time.
-$package = Get-AppxPackage | Where-Object {
-    try {
-        (Get-AppxPackageManifest -Package $_.PackageFullName).Package.Properties.DisplayName -eq 'SecretLead'
-    } catch {
-        $false
-    }
-}
-
-if (-not $package) {
-    Write-Error "SecretLead doesn't appear to be installed for this user. Nothing to reset."
-    exit 1
-}
-
-if (@($package).Count -gt 1) {
-    Write-Error "Found more than one installed package named 'SecretLead' -- resolve which one manually before running this script."
-    exit 1
-}
-
-$localState = Join-Path $env:LOCALAPPDATA "Packages\$($package.PackageFamilyName)\LocalState"
+$localState = Join-Path $env:LOCALAPPDATA "SecretLead"
 
 if (-not (Test-Path $localState)) {
     Write-Host "No AppData folder found at $localState -- nothing to reset."
