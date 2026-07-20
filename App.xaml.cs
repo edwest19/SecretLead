@@ -4,6 +4,7 @@ using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
+using SecretLead.ViewModels;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -35,6 +36,13 @@ public partial class App : Application
     /// </summary>
     public static nint WindowHandle =>
         WinRT.Interop.WindowNative.GetWindowHandle(Window);
+
+    /// <summary>
+    /// Shared status/validation messages shown in the nav rail's Status
+    /// flyout (README.md §3). Use <c>App.Status</c> from any page that
+    /// needs to report validation results or errors.
+    /// </summary>
+    public static StatusService Status { get; } = new();
 
     /// <summary>
     /// Initializes the singleton application object.
