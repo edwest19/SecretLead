@@ -25,6 +25,7 @@ jobs:
         run: >
           dotnet publish SecretLead.csproj
           -c Release -r win-x64 
+          -o publish
 
       - name: Zip output
         run: Compress-Archive -Path publish\* -DestinationPath SecretLead-win-x64.zip
