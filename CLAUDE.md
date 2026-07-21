@@ -30,7 +30,7 @@ Current layout:
 - No third-party NuGet packages — .NET BCL and Windows App SDK / COM only. `CommunityToolkit.Mvvm` was deliberately removed early on for exactly this reason; the hand-rolled `ObservableObject`/`RelayCommand` in `ViewModels/` replace it. Don't reintroduce it or any other MVVM/utility package.
 - No network calls, ever — no `HttpClient`, no telemetry, no update checks.
 - Never use the word "schema" in code, comments, or docs — "tag file" / "description" only.
-- No folder picker anywhere in the app — Import uses two independent file pickers (README.md §3).
+- No folder picker on Import — it uses two independent file pickers (README.md §3). This is about how files get *into* AppData (never trust a picked folder's contents wholesale), not a ban on folder pickers everywhere: the Backup button uses one to choose a destination it copies files *out* to (README.md §14).
 - No MSIX sandbox workarounds.
 - Ship one confirmed working change before starting the next — avoid speculative multi-file rewrites.
 

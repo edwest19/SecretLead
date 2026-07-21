@@ -21,6 +21,9 @@ public sealed class EntityStore
 {
     private readonly string _rootFolder;
 
+    /// <summary>The AppData folder entities are read from and written to.</summary>
+    public string RootFolder => _rootFolder;
+
     /// <summary>
     /// Uses the app's AppData local folder. Deliberately uses plain .NET file
     /// APIs rather than Windows.Storage.ApplicationData.Current, which

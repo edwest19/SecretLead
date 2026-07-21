@@ -42,7 +42,7 @@ If any prior document (including older revisions of this README, or older revisi
 
 ## 3. The Import screen
 
-There is no folder picker and no "folder is a project" model. Import works from **two independent file selections**, each its own file picker:
+There is no folder picker on Import, and no "folder is a project" model. That's the rule this section exists to enforce — it's about how files get *into* AppData, not a blanket ban on folder pickers anywhere in the app (the Backup button, §14, uses one to choose where files get copied back *out*). Import works from **two independent file selections**, each its own file picker:
 
 - **CSV file** — the data to import. Any filename, any location.
 - **Tag file** — the `.md` file describing the entity's tags (§4). Any filename, any location. It does not need to sit next to the CSV, and it does not need to be named after the entity — though the bundled default (`construction.md`) follows that convention anyway.
@@ -171,7 +171,7 @@ An AI or human auditing this repo should be able to check each line below agains
 
 - [ ] App makes zero network calls under any code path — no `HttpClient`, no sockets, nothing reachable from any menu or background timer.
 - [ ] Zero third-party NuGet package references in any `.csproj`.
-- [ ] Import screen has two independent file pickers (CSV, tag file) — no folder picker anywhere in the app.
+- [ ] Import screen has two independent file pickers (CSV, tag file) — no folder picker on Import.
 - [ ] The two files can be selected from different locations with unrelated filenames and import still works.
 - [ ] Import button's enabled/color state updates automatically the instant both files are selected — no separate "validate" action required.
 - [ ] Status/error area is reached via a left-side button, not a permanently visible box.
@@ -200,7 +200,7 @@ If you are an AI (Claude or otherwise) opening this repo cold:
 
 1. **This README is authoritative.** Where code and README disagree, that is a bug. Prefer fixing the code; if the README itself is what's out of date, say so explicitly and propose the edit rather than silently working around it.
 2. **Never use the word "schema."** Call the file a **tag file** and call its contents a **description**. If you find "schema" anywhere in this repo, it's leftover wording from before the rename — fix it, don't propagate it.
-3. **Don't reintroduce the folder-as-project model.** There is no folder picker anywhere in this app. Import uses two independent file pickers (§3); that supersedes any earlier design where a single picked folder held both files.
+3. **Don't reintroduce the folder-as-project model.** There is no folder picker on Import — it uses two independent file pickers (§3); that supersedes any earlier design where a single picked folder held both files. This is not a blanket ban on folder pickers anywhere in the app: the rule is about how files get *into* AppData (never trust a picked folder's contents wholesale), not about the Backup button's picker, which only copies files *out* of AppData for safekeeping (§14).
 4. **Don't reintroduce the old Contractor-only, pre-populated-database design.** That model is superseded (§0, §1). SecretLead does not ship real contractor data, does not vet licenses at runtime, and is not scoped to contractors at all — Construction is a bundled demo entity, not the product.
 5. **Don't add network calls, sync, telemetry, or NuGet dependencies** to "make something easier." If a task seems to need one, stop and flag it instead of implementing a workaround.
 6. **Treat §12 as a literal checklist** before considering any implementation task complete.
@@ -211,7 +211,8 @@ If you are an AI (Claude or otherwise) opening this repo cold:
 ## 14. Open items — tracked honestly
 
 - [ ] Whether SecretLead should validate an incoming tag file's tag set against an existing entity's stored `<EntityName>.md` before appending records, or continue relying purely on entity-name-as-key (§6).
-- [ ] **Backup/corruption protection for AppData.** Not yet designed for SecretLead. Worth doing given precedent: SecretList's `records.txt` was lost with no recoverable trace after a Windows feature update. Candidate approach (previously discussed for SecretList, not yet built for either app): atomic write-then-swap on every save, a rolling local `Backups` folder, and an in-app "export a copy" action so backing up outside AppData takes one click.
+- [x] **One-click backup out of AppData.** Built: the Backup button (`MainPageViewModel.BackupAsync`) opens a folder picker and copies every `<EntityName>.txt`/`.md` pair from AppData into the chosen folder. This is the one folder picker in the app — it's fine because it only copies files *out* of AppData for safekeeping; it never reads a picked folder's contents back in (that's what Import's two file pickers are for, §3). Worth having given precedent: SecretList's `records.txt` was lost with no recoverable trace after a Windows feature update.
+- [ ] **Atomic write-then-swap on every save.** Still not built for either app — the one-click backup above is a manual safety net, not protection against a crash mid-write corrupting the live `.txt`/`.md` files.
 - [ ] Splitting the bundled `Construction` demo tag file into separate real-usage tag files (`Construction`/general Home Improvement, `Electrician`, `Plumber`) once real data replaces the demo — future intent, not yet spec'd.
 - [ ] SecretLetter's actual design — input format, output format, whether it reads another Secret-family app's `.txt` file or is fully self-contained.
 - [ ] Whether any disclaimer mechanism is needed for arbitrary user-defined tag files, or only ever for a licensing-specific demo/dataset.
@@ -229,7 +230,7 @@ If you are an AI (Claude or otherwise) opening this repo cold:
 - No real-world personal/business data ships with the installer
 - A human reviews imported records before trusting them for anything
 - No use of the word "schema" — tag file / description only
-- No folder picker anywhere in the app — Import uses two independent file pickers (§3)
+- No folder picker on Import — it uses two independent file pickers (§3). The Backup button (§14) is the one exception: it opens a folder picker to choose where files get copied *out* to, never to pull picked files back in.
 
 ---
 
