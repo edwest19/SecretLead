@@ -239,3 +239,14 @@ If you are an AI (Claude or otherwise) opening this repo cold:
 Not part of the shipped app itself — tooling for maintainers and end users to run manually from a terminal. Doesn't touch or relax any rule in §2; the app binary still makes zero network calls and has zero NuGet dependencies. These scripts do.
 
 - `scripts\Reset-SecretLeadAppData.ps1` — deletes every stored entity (`<EntityName>.md` / `<EntityName>.txt`) from AppData, resetting SecretLead to first-run state. Existence-of-file is the whole mechanism (§6), so this is a complete, clean reset. Finds the AppData folder by matching the installed package's DisplayName ("SecretLead") rather than a hardcoded path or package identity, since the folder name is derived from the package's Identity Name and Publisher, which can change across builds/signing. Prompts for confirmation by default (supports `-WhatIf`/`-Confirm:$false`); pass `-Force` to skip the prompt. If Windows blocks it as a downloaded script ("running scripts is disabled on this system"), right-click the file → Properties → Unblock, or run `powershell -ExecutionPolicy Bypass -File .\scripts\Reset-SecretLeadAppData.ps1`.
+
+
+## Installing from GitHub Releases
+
+Each tagged release (`v*`) publishes signed MSIX packages (`x64`, `arm64`), SHA-256 checksums, and build provenance attestations. Packages are built in GitHub Actions and signed with Azure Artifact Signing.
+
+1. Download the `.msix` for your architecture from the Releases page.
+2. Double-click it and choose Install.
+3. Verify (optional): `Get-AuthenticodeSignature .\SecretLead-*.msix`, compare `Get-FileHash` with the `.sha256` file, or run `gh attestation verify <file> -R edwest19/SecretLead`.
+
+A brand-new publisher may see a SmartScreen warning at first until reputation builds.
