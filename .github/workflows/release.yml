@@ -1,5 +1,11 @@
 name: Release
 
+# Builds, signs (Azure Artifact Signing) and publishes MSIX packages on a version tag.
+# Required repository variables (Settings > Secrets and variables > Actions > Variables):
+#   AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID  (Entra app with federated credential; role
+#                                                              "Artifact Signing Certificate Profile Signer")
+#   SIGNING_ENDPOINT, SIGNING_ACCOUNT_NAME, SIGNING_CERT_PROFILE
+#   SIGNING_PUBLISHER_SUBJECT  (exact certificate subject, e.g. "CN=Your Name, O=..., L=..., S=..., C=...")
 on:
   push:
     tags:
@@ -7,10 +13,15 @@ on:
 
 permissions:
   contents: write
+  id-token: write
+  attestations: write
 
 jobs:
   build:
     runs-on: windows-latest
+    strategy:
+      matrix:
+        arch: [x64, arm64]
 
     steps:
       - name: Checkout
@@ -21,20 +32,89 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
-      - name: Publish self-contained
+      - name: Stamp manifest (version from tag, publisher from signing subject)
+        shell: pwsh
+        run: |
+          $tag = '${{ github.ref_name }}' -replace '^v',''
+          $core = ($tag -split '[-+]')[0]
+          $parts = @($core -split '\.')
+          while ($parts.Count -lt 4) { $parts += '0' }
+          $version = ($parts[0..3]) -join '.'
+          $m = Get-Content Package.appxmanifest -Raw
+          $m = $m -replace '(<Identity[^>]*?Publisher=")[^"]*(")', "`${1}${{ vars.SIGNING_PUBLISHER_SUBJECT }}`$2"
+          $m = $m -replace '(<Identity[^>]*?Version=")[^"]*(")', "`${1}$version`$2"
+          Set-Content Package.appxmanifest $m -NoNewline
+          Select-String -Path Package.appxmanifest -Pattern '<Identity' -Context 0,3
+
+      - name: Build MSIX
         run: >
           dotnet publish SecretLead.csproj
-          -c Release -r win-x64 
-          -o publish
+          -c Release -r win-${{ matrix.arch }} -p:Platform=${{ matrix.arch }}
+          -p:GenerateAppxPackageOnBuild=true
+          -p:AppxPackageSigningEnabled=false
+          -p:AppxBundle=Never
+          -p:AppxPackageDir="${{ github.workspace }}\msix\"
 
-      - name: List output (diagnotic)
-        run: Get-ChildItem -Path publish -Recurse -Depth 2
+      - name: Collect MSIX
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force out | Out-Null
+          $f = Get-ChildItem msix -Recurse -Filter *.msix | Select-Object -First 1
+          if (-not $f) { throw 'No .msix produced' }
+          Copy-Item $f.FullName "out\SecretLead-${{ github.ref_name }}-win-${{ matrix.arch }}.msix"
 
-      - name: Zip output
-        run: Compress-Archive -Path publish\* -DestinationPath SecretLead-win-x64.zip
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Sign with Azure Artifact Signing
+        uses: azure/artifact-signing-action@v1
+        with:
+          endpoint: ${{ vars.SIGNING_ENDPOINT }}
+          signing-account-name: ${{ vars.SIGNING_ACCOUNT_NAME }}
+          certificate-profile-name: ${{ vars.SIGNING_CERT_PROFILE }}
+          files-folder: ${{ github.workspace }}\out
+          files-folder-filter: msix
+          file-digest: SHA256
+          timestamp-rfc3161: http://timestamp.acs.microsoft.com
+          timestamp-digest: SHA256
+
+      - name: Verify signature and checksum
+        shell: pwsh
+        run: |
+          Get-ChildItem out -Filter *.msix | ForEach-Object {
+            $sig = Get-AuthenticodeSignature $_.FullName
+            "$($_.Name): $($sig.Status) $($sig.SignerCertificate.Subject)"
+            if (-not $sig.SignerCertificate) { throw "$($_.Name) is not signed" }
+            $h = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower()
+            "$h  $($_.Name)" | Out-File "$($_.FullName).sha256" -Encoding ascii
+          }
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: out/*.msix
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: msix-${{ matrix.arch }}
+          path: out/*
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4.3.0
+        with:
+          path: out
+          merge-multiple: true
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: SecretLead-win-x64.zip
+          files: out/*
           generate_release_notes: true
