@@ -81,6 +81,19 @@ public sealed class RepositoryRulesTests
     }
 
     [TestMethod]
+    public void AppManifest_DeclaresOnlyRunFullTrust()
+    {
+        // No network, device or AI capabilities. runFullTrust is required for a WinUI 3 desktop app
+        // packaged as full trust (README §2).
+        var capabilities = XDocument.Parse(ReadRepoFile("SecretLead.UI", "Package.appxmanifest")).Descendants()
+            .Where(e => e.Name.LocalName is "Capability" or "DeviceCapability")
+            .Select(e => (string?)e.Attribute("Name") ?? "")
+            .ToArray();
+
+        CollectionAssert.AreEqual(new[] { "runFullTrust" }, capabilities);
+    }
+
+    [TestMethod]
     public void AppCode_KeepsRecordsOnlyInThePackageDataFolder()
     {
         // README §5: records live in the MSIX package's own data folder, which App.Store gets from
