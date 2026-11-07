@@ -35,9 +35,12 @@
 
 .NOTES
     Close SecretLead first.
-    If Windows blocks this script ("running scripts is disabled on this
-    system"), either right-click the file > Properties > Unblock, or run:
-        powershell -ExecutionPolicy Bypass -File .\scripts\Reset-SecretLeadAppData.ps1
+    If Windows says "running scripts is disabled on this system", its
+    execution policy is still the default, Restricted. Set the developer
+    setting once for your account (README.md §16):
+        Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+    Local scripts then run; scripts downloaded from the internet still need
+    a trusted signature. Don't use Bypass or Unrestricted.
 #>
 [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
 param(

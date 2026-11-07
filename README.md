@@ -4,7 +4,7 @@ Copyright (c) 2026 edwest19
 
 Genetated by Claude.
 
-**Status:** working app; 0.2.0 will be the first MSIX release · **License:** MIT · **Platform:** Windows x64 (WinUI 3 / .NET 10, packaged MSIX)
+**Status:** released as a signed MSIX ([latest release](https://github.com/edwest19/SecretLead/releases/latest)) · **License:** MIT · **Platform:** Windows x64 (WinUI 3 / .NET 10, packaged MSIX)
 
 > This README is written as a **spec**, not just documentation. Any AI (including future Claude sessions) or human contributor should be able to compare its claims with the repository and assess how well each is supported. If code and README ever disagree, report the discrepancy and gather evidence before deciding whether the implementation or documentation needs correction. Never silently drift.
 
@@ -274,7 +274,7 @@ Classify review findings as:
 
 Not part of the shipped app itself — tooling for maintainers and end users to run manually from a terminal. Doesn't touch or relax any rule in §2; the app binary still makes zero network calls and has zero NuGet dependencies. These scripts do.
 
-- `scripts\Reset-SecretLeadAppData.ps1` — deletes every stored entity (`<EntityName>.md` / `<EntityName>.txt`) from AppData, resetting SecretLead to first-run state. Existence-of-file is the whole mechanism (§6), so this is a complete, clean reset. Finds every installed SecretLead package for the current user by its package name (the Identity Name in `SecretLead.UI/Package.appxmanifest`), which stays the same when the publisher changes, so a developer build and a signed release are both found. Clears the `.md`/`.txt` files in each one's data folder, `%LOCALAPPDATA%\Packages\<PackageFamilyName>\LocalState` (§5). Stops if SecretLead is running. Prompts for confirmation by default (supports `-WhatIf`/`-Confirm:$false`); pass `-Force` to skip the prompt. If Windows blocks it as a downloaded script ("running scripts is disabled on this system"), right-click the file → Properties → Unblock, or run `powershell -ExecutionPolicy Bypass -File .\scripts\Reset-SecretLeadAppData.ps1`.
+- `scripts\Reset-SecretLeadAppData.ps1` — deletes every stored entity (`<EntityName>.md` / `<EntityName>.txt`) from AppData, resetting SecretLead to first-run state. Existence-of-file is the whole mechanism (§6), so this is a complete, clean reset. Finds every installed SecretLead package for the current user by its package name (the Identity Name in `SecretLead.UI/Package.appxmanifest`), which stays the same when the publisher changes, so a developer build and a signed release are both found. Clears the `.md`/`.txt` files in each one's data folder, `%LOCALAPPDATA%\Packages\<PackageFamilyName>\LocalState` (§5). Stops if SecretLead is running. Prompts for confirmation by default (supports `-WhatIf`/`-Confirm:$false`); pass `-Force` to skip the prompt. If Windows says "running scripts is disabled on this system", that's Windows' default execution policy, Restricted. Set the developer setting once for your account, `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser`: scripts on your PC (including a git clone) then run, and scripts downloaded from the internet still need a trusted signature. Don't switch the check off with `Bypass` or `Unrestricted`.
 
 
 ## Install
