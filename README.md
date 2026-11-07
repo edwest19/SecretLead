@@ -50,8 +50,8 @@ There is no folder picker on Import, and no "folder is a project" model. That's 
 **Validation runs automatically the moment both files are selected** — there's no separate "check" step. SecretLead matches every tag against the CSV's column headers, both directions, exactly as described in §9.
 
 **The Import button's color *is* the validation result:**
-- Gray/disabled — one or both files not yet selected, or they don't match.
-- **Green/enabled** — both files selected and every tag matches a CSV column with nothing left over in either direction.
+- Gray/disabled — one or both files not yet selected, they don't match, or the tag file names an entity that already exists with a different tag file (§6).
+- **Green/enabled** — both files selected, every tag matches a CSV column with nothing left over in either direction, and the entity is new or its stored tag file has the same tags in the same order.
 
 **A status area** holds validation messages and errors — reached via a button on the left (nav rail), not a box that's permanently visible on the Import screen. Same content rule as always: every mismatch is named explicitly (§9), never summarized.
 
@@ -61,6 +61,8 @@ There is no folder picker on Import, and no "folder is a project" model. That's 
 2. The tag file itself is copied into AppData alongside the entity's records (§5) — so the app always has its own reference copy of the tag file that produced `<EntityName>.txt`, independent of wherever the original file came from or whether it still exists afterward.
 3. The CSV is converted into records per the tag file's rules (§4 role/split rules, §8 normalization) and written to `<EntityName>.txt` in AppData.
 4. If `<EntityName>.txt` already exists, the new records are **appended** — nothing already stored is deleted or overwritten (§6).
+
+If the import fails anyway (a disk error, say), the reason goes to the status area, the app stays open, and both selected files stay selected.
 
 Nothing outside AppData is ever written. The original CSV and tag file, wherever the owner picked them from, are only ever read, never modified or moved.
 
@@ -79,6 +81,10 @@ A tag file is plain Markdown, parsed as follows:
 - The **second** `### TAG` plays the **Nickname** role — the searchable identifying field used for browsing.
 - Tags beyond position 2 can be declared in any order. CSV columns can be in any order too, matched by name.
 
+**Two naming rules**, because names become stored text and file names (§5). A tag file that breaks either one is refused, and the reason is shown in the status area:
+- A **tag name** can't contain a period (`.`). Each record line is stored as `:tag.TagName.Value`, and read back by splitting at the first period.
+- The **entity name** must work as a Windows file name: none of `< > : " / \ | ? *` or control characters (such as a tab), not ending in a period or a space, and not a name Windows reserves for a device (CON, PRN, AUX, NUL, COM1–COM9, LPT1–LPT9, also when followed by an extension, like `NUL.backup`). So an entity name can never point outside AppData.
+
 That's the entire grammar: a name-matcher, two positional roles, and a filename — not a schema in the type/constraint sense.
 
 ---
@@ -90,7 +96,8 @@ Everything SecretLead writes lives in the app's sandboxed AppData storage — **
 - `<EntityName>.md` — the reference copy of the tag file that produced this entity, copied in at Import time (§3).
 - `<EntityName>.txt` — the actual records.
 
-- **The entity name is the only key.** There is no per-source, per-CSV, or per-import-session isolation. If two different imports both declare `## Contractor`, they read and write the **same** `Contractor.txt` (and update the same `Contractor.md`).
+- **The entity name is the only key.** There is no per-source, per-CSV, or per-import-session isolation. If two different imports both declare `## Contractor`, they read and write the **same** `Contractor.txt` (and update the same `Contractor.md`), as long as both tag files have the same tags in the same order (§6).
+- Records are stored one line per field, so a value can't hold a line break (§8).
 - Keeping the tag file's own copy in AppData means an entity stays fully self-describing even if the original tag file the owner picked gets renamed, moved, or deleted afterward.
 
 ---
@@ -103,9 +110,10 @@ SecretLead's home/browse screen lists whatever entities currently exist in AppDa
 |---|---|
 | First run, AppData has no entities yet | The bundled Construction demo (§11) is seeded in automatically, so there's always at least one browsable entity out of the box. |
 | Imported tag file names an entity with **no** existing `<EntityName>.txt` | Import creates `<EntityName>.md` and `<EntityName>.txt` fresh. |
-| Imported tag file names an entity that **already exists** | Import appends the new records into the existing `<EntityName>.txt` and updates the stored `<EntityName>.md` copy. Existing records are never deleted or overwritten. |
+| Imported tag file names an entity that **already exists**, with the same tags in the same order as the stored `<EntityName>.md` (names compared ignoring case) | Import appends the new records into the existing `<EntityName>.txt` and updates the stored `<EntityName>.md` copy. Existing records are never deleted or overwritten. |
+| Imported tag file names an entity that **already exists**, with different tags or a different order | Import is blocked: the button stays gray, and the status area names each tag that differs (or gives the stored order). Nothing is written. |
 
-**Still open, not decided (see §14):** whether SecretLead should compare the incoming tag file's tag set against the entity's already-stored `<EntityName>.md` before appending — flagging a mismatch as a possible different dataset reusing the same entity name — or continue relying purely on entity-name-as-key with no structural check.
+**Why a different tag file is blocked** (decided 2026-11-07): records are always written with the stored tag file's tags, so accepting a tag file with fewer tags would erase those fields from every record the next time any record is edited or deleted. A different order would change which tags play the Category and Nickname roles (§4). To import a different dataset, give its tag file a different entity name.
 
 ---
 
@@ -129,6 +137,8 @@ Inferred purely from **tag name substring** (case-insensitive), no separate data
 | `date` | Reformat to `mm/dd/yyyy` regardless of source format |
 | `email` | No validation or transform — stored as-is |
 | `phone` | Strip to digits, then reformat by digit count: 10 digits → `(631) 555-1212`; 11 digits → `+1 (631) 555-1212`; 7 digits → `555-1212`; anything else → left as-is |
+
+**Every tag, first:** a value with line breaks becomes one line, because records are stored one line per field (§5). Each line is trimmed, blank lines are dropped, and the lines are joined with a single space: a quoted CSV address `"12 Main St` / `Suite 4"` is stored as `12 Main St Suite 4`. This also applies to values typed or pasted in by hand. A value with no line break is untouched.
 
 **Tag-file-specific exception:** Business Name falling back to `Last Name, First Name` when blank is specific to the bundled **Construction** demo tag file (§11) — it only makes sense where those three tags exist, and is **not** a generalized rule other tag files inherit automatically.
 
@@ -182,6 +192,9 @@ An AI or human auditing this repo should be able to check each line below agains
 - [ ] Importing into an entity that already exists appends records rather than overwriting.
 - [ ] First run with empty AppData seeds the Construction demo automatically, without requiring the owner to run Import.
 - [ ] Import validates tags vs. CSV columns in both directions; mismatches are named explicitly in the status area.
+- [ ] Importing into an entity that already exists is blocked unless the tag file has the same tags in the same order as the stored copy; the status area names each tag that differs.
+- [ ] Tag names with a period, and entity names that aren't usable Windows file names, are refused with the reason in the status area.
+- [ ] A line break inside an imported or hand-entered value is stored as a single space; no record loses the text after a line break.
 - [ ] Semicolon-delimited values in the Category-role tag explode into one record per value on import.
 - [ ] `date`-containing tags normalize to `mm/dd/yyyy`; `phone`-containing tags normalize by digit count per §8; `email`-containing tags are untouched.
 - [ ] Business Name blank-fallback logic exists only in code paths specific to the Construction tag file, not as a generic rule.
@@ -225,7 +238,7 @@ Classify review findings as:
 
 ## 14. Open items — tracked honestly
 
-- [ ] Whether SecretLead should validate an incoming tag file's tag set against an existing entity's stored `<EntityName>.md` before appending records, or continue relying purely on entity-name-as-key (§6).
+- [x] **Re-import with a different tag file.** Decided 2026-11-07: an import into an existing entity is blocked unless its tag file has the same tags in the same order as the stored `<EntityName>.md`, and the differing tags are named (§6).
 - [x] **One-click backup out of AppData.** Built: the Backup button (`MainPageViewModel.BackupAsync`) opens a folder picker and copies every `<EntityName>.txt`/`.md` pair from AppData into the chosen folder. This is the one folder picker in the app — it's fine because it only copies files *out* of AppData for safekeeping; it never reads a picked folder's contents back in (that's what Import's two file pickers are for, §3). Worth having given precedent: SecretList's `records.txt` was lost with no recoverable trace after a Windows feature update.
 - [ ] **Atomic write-then-swap on every save.** Still not built for either app — the one-click backup above is a manual safety net, not protection against a crash mid-write corrupting the live `.txt`/`.md` files.
 - [ ] Splitting the bundled `Construction` demo tag file into separate real-usage tag files (`Construction`/general Home Improvement, `Electrician`, `Plumber`) once real data replaces the demo — future intent, not yet spec'd.

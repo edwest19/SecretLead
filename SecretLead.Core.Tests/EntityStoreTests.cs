@@ -3,6 +3,7 @@
 // AI-GENERATED CODE: This file was written by Claude (Anthropic).
 // SecretLead is a project built with AI-generated code; see README.md.
 // ============================================================================
+using SecretLead.Services;
 using static SecretLead.Core.Tests.TestHelper;
 
 namespace SecretLead.Core.Tests;
@@ -73,6 +74,133 @@ public sealed class EntityStoreTests
 
         var names = store.GetRecords("Pets").Select(r => r.GetValue("Name")).ToArray();
         CollectionAssert.AreEqual(new[] { "Tom" }, names);
+    }
+
+    // Bug 1 (evaluation 2026-11-07), for values typed or pasted by hand: a line break in a value
+    // split the stored record, and everything after it was lost on reading back.
+    [TestMethod]
+    public void ValueWithLineBreaks_IsStoredOnOneLine_AndReadsBackWhole()
+    {
+        using var folder = new TempFolder();
+        var store = StoreIn(folder);
+        store.SaveTagFile("Pets", PetsTagFileText("Address"));
+
+        store.AppendRecords("Pets",
+        [
+            Record(("Kind", "Dog"), ("Name", "Rex"), ("Address", "1 Elm\r\n\r\nRear")),
+            Record(("Kind", "Cat"), ("Name", "Tom"), ("Address", "2 Oak")),
+        ]);
+
+        var records = store.GetRecords("Pets");
+        Assert.HasCount(2, records);
+        Assert.AreEqual("1 Elm Rear", records[0].GetValue("Address"));
+        Assert.AreEqual("Tom", records[1].GetValue("Name"));
+    }
+
+    // Bug 2 (evaluation 2026-11-07): importing a tag file with fewer tags under an existing entity
+    // name replaced the stored tag file, and the next edit rewrote every record without the missing tags.
+    [TestMethod]
+    public void ReimportWithDifferentTags_IsRefused_AndStoredRecordsKeepEveryField()
+    {
+        using var folder = new TempFolder();
+        var store = StoreIn(folder);
+        store.SaveTagFile("Construction", "## Construction\n### TAG Category\n### TAG Business Name\n### TAG Phone\n### TAG Email\n");
+        store.AppendRecords("Construction",
+            [Record(("Category", "Plumber"), ("Business Name", "Acme"), ("Phone", "(631) 555-1212"), ("Email", "a@example.com"))]);
+
+        Assert.ThrowsExactly<InvalidOperationException>(
+            () => store.SaveTagFile("Construction", "## Construction\n### TAG Category\n### TAG Business Name\n"));
+
+        // The Browse screen's Edit saves every record with the stored tag file.
+        var records = store.GetRecords("Construction").ToList();
+        records[0].SetValue("Business Name", "Acme Plumbing");
+        store.SaveRecords("Construction", records);
+
+        var reread = store.GetRecords("Construction")[0];
+        Assert.AreEqual("Acme Plumbing", reread.GetValue("Business Name"));
+        Assert.AreEqual("(631) 555-1212", reread.GetValue("Phone"));
+        Assert.AreEqual("a@example.com", reread.GetValue("Email"));
+    }
+
+    [TestMethod]
+    public void ReimportWithTheSameTagsInADifferentOrder_IsRefused()
+    {
+        using var folder = new TempFolder();
+        var store = StoreIn(folder);
+        store.SaveTagFile("Pets", PetsTagFileText("Owner"));
+
+        // The first two tags decide Category and Nickname, so the order must stay the same.
+        Assert.ThrowsExactly<InvalidOperationException>(
+            () => store.SaveTagFile("Pets", "## Pets\n### TAG Name\n### TAG Kind\n### TAG Owner\n"));
+    }
+
+    [TestMethod]
+    public void ReimportWithTheSameTags_DifferingOnlyInCase_IsAllowed()
+    {
+        using var folder = new TempFolder();
+        var store = StoreIn(folder);
+        store.SaveTagFile("Pets", PetsTagFileText("Owner"));
+
+        store.SaveTagFile("Pets", "# Pets, version 2\n## Pets\n### TAG kind\n### TAG NAME\n### TAG Owner\n");
+
+        CollectionAssert.AreEqual(new[] { "kind", "NAME", "Owner" }, store.GetTagFile("Pets").Tags.ToArray());
+    }
+
+    [TestMethod]
+    public void TagFileConflicts_NameEveryTagThatDiffers_ForTheStatusArea()
+    {
+        using var folder = new TempFolder();
+        var store = StoreIn(folder);
+        store.SaveTagFile("Pets", PetsTagFileText("Owner"));
+
+        var conflicts = store.TagFileConflicts("Pets", TagFileParser.Parse(PetsTagFileText("Breed")));
+
+        CollectionAssert.AreEqual(
+            new[]
+            {
+                "'Pets' already exists with a different tag file, so this import is blocked. Importing would erase fields from its stored records.",
+                "Tag 'Owner' is in the stored tag file but not in this one.",
+                "Tag 'Breed' is in this tag file but not in the stored one.",
+            },
+            conflicts.ToArray());
+    }
+
+    [TestMethod]
+    public void TagFileConflicts_SameTagsInADifferentOrder_GiveTheStoredOrder()
+    {
+        using var folder = new TempFolder();
+        var store = StoreIn(folder);
+        store.SaveTagFile("Pets", PetsTagFileText("Owner"));
+
+        var conflicts = store.TagFileConflicts("Pets", TagFileParser.Parse("## Pets\n### TAG Name\n### TAG Kind\n### TAG Owner\n"));
+
+        Assert.HasCount(2, conflicts);
+        Assert.AreEqual("The tags are the same but in a different order. The stored order is: Kind, Name, Owner.", conflicts[1]);
+    }
+
+    [TestMethod]
+    public void TagFileConflicts_ForANewEntity_OrTheSameTags_AreNone()
+    {
+        using var folder = new TempFolder();
+        var store = StoreIn(folder);
+        var pets = TagFileParser.Parse(PetsTagFileText("Owner"));
+
+        Assert.IsEmpty(store.TagFileConflicts("Pets", pets));
+
+        store.SaveTagFile("Pets", PetsTagFileText("Owner"));
+        Assert.IsEmpty(store.TagFileConflicts("Pets", pets));
+    }
+
+    // Bug 4 (evaluation 2026-11-07): the store is the last place an entity name becomes a path.
+    [TestMethod]
+    public void EntityNameOutsideTheStoreFolder_IsRefused_AndNothingIsWritten()
+    {
+        using var folder = new TempFolder();
+        var store = StoreIn(folder);
+
+        Assert.ThrowsExactly<ArgumentException>(() => store.SaveTagFile("../Escaped", "## Escaped\n### TAG Kind\n### TAG Name\n"));
+
+        Assert.IsFalse(File.Exists(folder.PathOf("Escaped.md")));
     }
 
     [TestMethod]

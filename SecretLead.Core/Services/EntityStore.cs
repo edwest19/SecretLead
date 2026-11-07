@@ -43,9 +43,25 @@ public sealed class EntityStore
         _rootFolder = rootFolder;
     }
 
-    private string TagFilePath(string entityName) => Path.Combine(_rootFolder, $"{entityName}.md");
+    private string TagFilePath(string entityName) => PathFor(entityName, ".md");
 
-    private string RecordsFilePath(string entityName) => Path.Combine(_rootFolder, $"{entityName}.txt");
+    private string RecordsFilePath(string entityName) => PathFor(entityName, ".txt");
+
+    /// <summary>
+    /// AI-generated (Claude): the one place an entity name becomes a path. A name that isn't a
+    /// plain Windows file name (path parts, reserved characters or device names) is refused, so
+    /// nothing is ever read or written outside <see cref="RootFolder"/> (README §3, §5).
+    /// </summary>
+    /// <exception cref="ArgumentException">The name can't be used as a file name.</exception>
+    private string PathFor(string entityName, string extension)
+    {
+        if (EntityNames.Problem(entityName) is { } problem)
+        {
+            throw new ArgumentException(problem, nameof(entityName));
+        }
+
+        return Path.Combine(_rootFolder, entityName + extension);
+    }
 
     /// <summary>
     /// True if this entity has ever been imported/seeded — i.e. its
@@ -93,11 +109,63 @@ public sealed class EntityStore
     /// time (README.md §3 step 2) before records are written, so the store
     /// always has its own self-describing copy independent of wherever the
     /// original tag file came from.
+    /// AI-generated (Claude): refuses a tag file that doesn't match the one already stored for this
+    /// entity (see <see cref="TagFileConflicts"/>), so stored records never lose fields.
     /// </summary>
+    /// <exception cref="TagFileFormatException">The text isn't a valid tag file.</exception>
+    /// <exception cref="InvalidOperationException">The entity already exists with a different tag file.</exception>
     public void SaveTagFile(string entityName, string tagFileMarkdownText)
     {
+        var conflicts = TagFileConflicts(entityName, TagFileParser.Parse(tagFileMarkdownText));
+        if (conflicts.Count > 0)
+        {
+            throw new InvalidOperationException(string.Join(" ", conflicts));
+        }
+
         Directory.CreateDirectory(_rootFolder);
         File.WriteAllText(TagFilePath(entityName), tagFileMarkdownText);
+    }
+
+    /// <summary>
+    /// AI-generated (Claude): why <paramref name="incoming"/> can't replace the tag file already
+    /// stored for <paramref name="entityName"/>, one message per problem, ready for the status area.
+    /// Empty when nothing is stored yet, or when the stored tag file has the same tags in the same
+    /// order (names compared ignoring case, as everywhere else — README §4).
+    /// Why it matters: records are always written with the stored tag file's tags, so a tag file
+    /// with other tags would erase fields from every record at the next edit or delete; and a
+    /// different order would change which tags play the Category and Nickname roles (README §6).
+    /// </summary>
+    public IReadOnlyList<string> TagFileConflicts(string entityName, TagFileDefinition incoming)
+    {
+        if (!File.Exists(TagFilePath(entityName)))
+        {
+            return [];
+        }
+
+        var stored = GetTagFile(entityName).Tags;
+        var messages = new List<string>();
+
+        foreach (var tag in stored.Where(t => !incoming.Tags.Contains(t, StringComparer.OrdinalIgnoreCase)))
+        {
+            messages.Add($"Tag '{tag}' is in the stored tag file but not in this one.");
+        }
+
+        foreach (var tag in incoming.Tags.Where(t => !stored.Contains(t, StringComparer.OrdinalIgnoreCase)))
+        {
+            messages.Add($"Tag '{tag}' is in this tag file but not in the stored one.");
+        }
+
+        if (messages.Count == 0 && !stored.SequenceEqual(incoming.Tags, StringComparer.OrdinalIgnoreCase))
+        {
+            messages.Add($"The tags are the same but in a different order. The stored order is: {string.Join(", ", stored)}.");
+        }
+
+        if (messages.Count > 0)
+        {
+            messages.Insert(0, $"'{entityName}' already exists with a different tag file, so this import is blocked. Importing would erase fields from its stored records.");
+        }
+
+        return messages;
     }
 
     /// <summary>

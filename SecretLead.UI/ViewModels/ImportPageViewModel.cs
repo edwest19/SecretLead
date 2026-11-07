@@ -147,11 +147,24 @@ public sealed class ImportPageViewModel : ObservableObject
         }
 
         var result = CsvImporter.Validate(_tagFileDefinition, _csvTable.Headers);
-        IsReadyToImport = result.IsValid;
 
-        App.Status.SetMessages(result.IsValid
+        // AI-generated (Claude): an entity that already exists must keep its tag file (README.md §6),
+        // so a different one keeps the button gray and each differing tag is named in Status.
+        IReadOnlyList<string> conflicts;
+        try
+        {
+            conflicts = _entityStore.TagFileConflicts(_tagFileDefinition.EntityName, _tagFileDefinition);
+        }
+        catch (Exception ex)
+        {
+            conflicts = [$"The stored tag file for '{_tagFileDefinition.EntityName}' couldn't be read: {ex.Message}"];
+        }
+
+        IsReadyToImport = result.IsValid && conflicts.Count == 0;
+
+        App.Status.SetMessages(IsReadyToImport
             ? [$"Every tag matches a CSV column. Ready to import into '{_tagFileDefinition.EntityName}'."]
-            : result.Messages);
+            : [.. result.Messages, .. conflicts]);
     }
 
     private void Import()
@@ -162,15 +175,27 @@ public sealed class ImportPageViewModel : ObservableObject
         }
 
         var entityName = _tagFileDefinition.EntityName;
-        var records = CsvImporter.Import(_tagFileDefinition, _csvTable);
 
-        // Tag file is saved before records are written — EntityStore
-        // requires it (README.md §3 steps 2 then 3).
-        _entityStore.SaveTagFile(entityName, _tagFileRawText);
-        _entityStore.AppendRecords(entityName, records);
+        // AI-generated (Claude): a failed import is reported in Status instead of closing the app,
+        // and the two selected files stay selected so the person can see what to fix.
+        try
+        {
+            var records = CsvImporter.Import(_tagFileDefinition, _csvTable);
 
-        ResultMessage = $"Imported {records.Count} record(s) into '{entityName}'.";
-        App.Status.SetMessages([ResultMessage]);
+            // Tag file is saved before records are written — EntityStore
+            // requires it (README.md §3 steps 2 then 3).
+            _entityStore.SaveTagFile(entityName, _tagFileRawText);
+            _entityStore.AppendRecords(entityName, records);
+
+            ResultMessage = $"Imported {records.Count} record(s) into '{entityName}'.";
+            App.Status.SetMessages([ResultMessage]);
+        }
+        catch (Exception ex)
+        {
+            ResultMessage = $"The import into '{entityName}' didn't finish. Open Status for the reason.";
+            App.Status.SetMessages([$"Import into '{entityName}' failed: {ex.Message}"]);
+            return;
+        }
 
         _csvTable = null;
         CsvFileName = "No file selected";
