@@ -26,6 +26,7 @@ Current layout:
   - `ViewModels/` — one per page (`MainPageViewModel`, `ImportPageViewModel`, `BrowsePageViewModel`), the hand-rolled MVVM base (`ObservableObject`, `RelayCommand` — see below), and the shared `StatusService`
   - `MainWindow.xaml`, `MainPage.xaml` (app shell: nav rail + content frame), `ImportPage.xaml`, `BrowsePage.xaml` — page files live at the project root, there is no `Views/` folder
   - `Assets/` — the app's icons and tiles
+- `docs/file-format.md` — the exact `<EntityName>.md` and `<EntityName>.txt` formats, locked by `FileFormatTests`
 - `Directory.Build.props` — the version, shared by every project
 - `global.json` — selects a .NET 10 SDK
 - `CHANGELOG.md` — release notes
@@ -38,6 +39,7 @@ Current layout:
 - Never use the word "schema" in code, comments, or docs — "tag file" / "description" only.
 - No folder picker on Import — it uses two independent file pickers (README.md §3). This is about how files get *into* AppData (never trust a picked folder's contents wholesale), not a ban on folder pickers everywhere: the Backup button uses one to choose a destination it copies files *out* to (README.md §14).
 - No MSIX sandbox workarounds.
+- Never change a file format silently. Both formats are specified in `docs/file-format.md` and locked by the known-answer tests in `FileFormatTests`. Never edit their expected values to make a test pass; a deliberate change needs the owner's approval, a new spec version, and a plan for files already on disk. <!-- AI-generated (Claude) -->
 - Ship one confirmed working change before starting the next — avoid speculative multi-file rewrites.
 
 ## Sibling projects (not in this repo)

@@ -98,6 +98,7 @@ Everything SecretLead writes lives in the app's sandboxed AppData storage — **
 
 - **The entity name is the only key.** There is no per-source, per-CSV, or per-import-session isolation. If two different imports both declare `## Contractor`, they read and write the **same** `Contractor.txt` (and update the same `Contractor.md`), as long as both tag files have the same tags in the same order (§6).
 - Records are stored one line per field, so a value can't hold a line break (§8).
+- The exact format of both files is specified in [docs/file-format.md](docs/file-format.md) and locked by known-answer tests. Changing it needs the owner's approval.
 - Keeping the tag file's own copy in AppData means an entity stays fully self-describing even if the original tag file the owner picked gets renamed, moved, or deleted afterward.
 
 ---
