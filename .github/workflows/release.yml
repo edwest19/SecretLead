@@ -40,15 +40,16 @@ jobs:
           $parts = @($core -split '\.')
           while ($parts.Count -lt 4) { $parts += '0' }
           $version = ($parts[0..3]) -join '.'
-          $m = Get-Content Package.appxmanifest -Raw
+          # AI-generated (Claude): the app project and its manifest moved to SecretLead.UI/.
+          $m = Get-Content SecretLead.UI/Package.appxmanifest -Raw
           $m = $m -replace '(<Identity[^>]*?Publisher=")[^"]*(")', "`${1}${{ vars.SIGNING_PUBLISHER_SUBJECT }}`$2"
           $m = $m -replace '(<Identity[^>]*?Version=")[^"]*(")', "`${1}$version`$2"
-          Set-Content Package.appxmanifest $m -NoNewline
-          Select-String -Path Package.appxmanifest -Pattern '<Identity' -Context 0,3
+          Set-Content SecretLead.UI/Package.appxmanifest $m -NoNewline
+          Select-String -Path SecretLead.UI/Package.appxmanifest -Pattern '<Identity' -Context 0,3
 
       - name: Build MSIX
         run: >
-          dotnet publish SecretLead.csproj
+          dotnet publish SecretLead.UI/SecretLead.UI.csproj
           -c Release -r win-${{ matrix.arch }} -p:Platform=${{ matrix.arch }}
           -p:GenerateAppxPackageOnBuild=true
           -p:AppxPackageSigningEnabled=false
