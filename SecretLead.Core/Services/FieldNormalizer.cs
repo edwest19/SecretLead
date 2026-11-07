@@ -13,11 +13,15 @@ namespace SecretLead.Services;
 /// <item>"phone" → stripped to digits, reformatted by digit count.</item>
 /// <item>"email" (and everything else) → stored as-is.</item>
 /// </list>
+/// Before any of these, every value loses its line breaks (<see cref="FlattenLineBreaks"/>).
 /// </summary>
 public static class FieldNormalizer
 {
     public static string Normalize(string tagName, string rawValue)
     {
+        // AI-generated (Claude): records are stored one line per field, so a value can't keep a line break.
+        rawValue = FlattenLineBreaks(rawValue);
+
         if (tagName.Contains("date", StringComparison.OrdinalIgnoreCase))
         {
             return NormalizeDate(rawValue);
@@ -29,6 +33,22 @@ public static class FieldNormalizer
         }
 
         return rawValue;
+    }
+
+    /// <summary>
+    /// AI-generated (Claude): makes a value one line, because every <c>&lt;EntityName&gt;.txt</c>
+    /// stores one line per field (README §5, §8). A value with no line break is returned unchanged.
+    /// Otherwise each line is trimmed, blank lines are dropped, and the lines are joined with one
+    /// space: "12 Main St\nSuite 4" becomes "12 Main St Suite 4".
+    /// </summary>
+    public static string FlattenLineBreaks(string value)
+    {
+        if (value.IndexOfAny(['\r', '\n']) < 0)
+        {
+            return value;
+        }
+
+        return string.Join(' ', value.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
     }
 
     private static string NormalizeDate(string rawValue)

@@ -43,6 +43,14 @@ public static class TagFileParser
                     throw new TagFileFormatException("Found a '### TAG' line with no tag name after it.");
                 }
 
+                // AI-generated (Claude): each record line is stored as ":tag.TagName.Value" and read
+                // back by splitting at the first period, so a tag name can't contain one.
+                if (tagName.Contains('.'))
+                {
+                    throw new TagFileFormatException(
+                        $"Tag '{tagName}' contains a period. Tag names can't, because each record line is stored as :tag.TagName.Value.");
+                }
+
                 tags.Add(tagName);
             }
             else if (line.StartsWith(EntityLinePrefix, StringComparison.Ordinal))
@@ -62,6 +70,12 @@ public static class TagFileParser
                 if (name.Length == 0)
                 {
                     throw new TagFileFormatException("Found a '##' line with no entity name after it.");
+                }
+
+                // AI-generated (Claude): the entity name becomes <EntityName>.md / .txt in AppData.
+                if (EntityNames.Problem(name) is { } problem)
+                {
+                    throw new TagFileFormatException(problem);
                 }
 
                 entityName = name;

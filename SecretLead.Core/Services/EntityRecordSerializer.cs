@@ -14,11 +14,12 @@ namespace SecretLead.Services;
 /// the record text itself).
 /// </summary>
 /// <remarks>
-/// A tag name is assumed to contain no '.' characters (true of every tag
-/// used so far — "Business Name", "License ID", etc.). A value may contain
+/// A tag name contains no '.' characters (AI-generated (Claude): enforced by
+/// <see cref="TagFileParser"/>). A value may contain
 /// '.' freely (URLs, emails) — parsing only looks for the *first* '.' after
 /// the tag name to find the value's start, then takes the rest of the line
-/// as-is.
+/// as-is. A value can't contain a line break: <see cref="Serialize"/> writes
+/// it as one line (AI-generated (Claude): <see cref="FieldNormalizer.FlattenLineBreaks"/>).
 /// </remarks>
 public static class EntityRecordSerializer
 {
@@ -101,7 +102,9 @@ public static class EntityRecordSerializer
 
             foreach (var tagName in tagOrder)
             {
-                var value = record.GetValue(tagName) ?? string.Empty;
+                // AI-generated (Claude): a line break would split the record when it's read back,
+                // so values typed or pasted by hand are made one line here, as imported ones are.
+                var value = FieldNormalizer.FlattenLineBreaks(record.GetValue(tagName) ?? string.Empty);
                 sb.Append(LinePrefix).Append(tagName).Append('.').Append(value).Append('\n');
             }
         }

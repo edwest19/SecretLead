@@ -3,6 +3,7 @@
 // AI-GENERATED CODE: This file was written by Claude (Anthropic).
 // SecretLead is a project built with AI-generated code; see README.md.
 // ============================================================================
+using SecretLead.Services;
 using static SecretLead.Core.Tests.TestHelper;
 
 namespace SecretLead.Core.Tests;
@@ -143,6 +144,51 @@ public sealed class EntityStoreTests
         store.SaveTagFile("Pets", "# Pets, version 2\n## Pets\n### TAG kind\n### TAG NAME\n### TAG Owner\n");
 
         CollectionAssert.AreEqual(new[] { "kind", "NAME", "Owner" }, store.GetTagFile("Pets").Tags.ToArray());
+    }
+
+    [TestMethod]
+    public void TagFileConflicts_NameEveryTagThatDiffers_ForTheStatusArea()
+    {
+        using var folder = new TempFolder();
+        var store = StoreIn(folder);
+        store.SaveTagFile("Pets", PetsTagFileText("Owner"));
+
+        var conflicts = store.TagFileConflicts("Pets", TagFileParser.Parse(PetsTagFileText("Breed")));
+
+        CollectionAssert.AreEqual(
+            new[]
+            {
+                "'Pets' already exists with a different tag file, so this import is blocked. Importing would erase fields from its stored records.",
+                "Tag 'Owner' is in the stored tag file but not in this one.",
+                "Tag 'Breed' is in this tag file but not in the stored one.",
+            },
+            conflicts.ToArray());
+    }
+
+    [TestMethod]
+    public void TagFileConflicts_SameTagsInADifferentOrder_GiveTheStoredOrder()
+    {
+        using var folder = new TempFolder();
+        var store = StoreIn(folder);
+        store.SaveTagFile("Pets", PetsTagFileText("Owner"));
+
+        var conflicts = store.TagFileConflicts("Pets", TagFileParser.Parse("## Pets\n### TAG Name\n### TAG Kind\n### TAG Owner\n"));
+
+        Assert.HasCount(2, conflicts);
+        Assert.AreEqual("The tags are the same but in a different order. The stored order is: Kind, Name, Owner.", conflicts[1]);
+    }
+
+    [TestMethod]
+    public void TagFileConflicts_ForANewEntity_OrTheSameTags_AreNone()
+    {
+        using var folder = new TempFolder();
+        var store = StoreIn(folder);
+        var pets = TagFileParser.Parse(PetsTagFileText("Owner"));
+
+        Assert.IsEmpty(store.TagFileConflicts("Pets", pets));
+
+        store.SaveTagFile("Pets", PetsTagFileText("Owner"));
+        Assert.IsEmpty(store.TagFileConflicts("Pets", pets));
     }
 
     // Bug 4 (evaluation 2026-11-07): the store is the last place an entity name becomes a path.
