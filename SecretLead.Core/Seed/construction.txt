@@ -1,0 +1,12 @@
+:tag.Category.Plumber
+:tag.Business Name.Example Plumbing & Heating
+:tag.License ID.DEMO-0001
+:tag.Last Name.Sample
+:tag.First Name.Pat
+:tag.Address.100 Example Street, Anytown, NY 00000
+:tag.Phone.(631) 555-0100
+:tag.Email.info@example.com
+:tag.Status.Active
+:tag.Date Issued.01/15/2026
+:tag.Date Expire.01/15/2028
+:tag.Website.www.example.com

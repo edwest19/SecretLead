@@ -166,8 +166,10 @@ A4 portrait, two records per page, duplex, folded into an A5 handout. No require
 
 SecretLead ships with one built-in default entity, **seeded directly into AppData on first run** (when AppData has no entities yet — §6), so a first-time user has something to browse immediately without running Import at all:
 
-- `.\assets\construction.md` — the tag file, copied into AppData as `Construction.md`. Entity name `## Construction` (12 tags: Category, Business Name, License ID, Last Name, First Name, Address, Phone, Email, Status, Date Issued, Date Expire, Website).
-- `.\assets\construction.txt` — **one fictional sample record**, copied into AppData as `Construction.txt`. Reserved `555` phone number, `example.com` email/website domain. No real business names, addresses, phone numbers, or license numbers ship with the installer, ever.
+- `SecretLead.Core/Seed/construction.md` — the tag file, copied into AppData as `Construction.md`. Entity name `## Construction` (12 tags: Category, Business Name, License ID, Last Name, First Name, Address, Phone, Email, Status, Date Issued, Date Expire, Website).
+- `SecretLead.Core/Seed/construction.txt` — **one fictional sample record**, copied into AppData as `Construction.txt`: Example Plumbing & Heating, license `DEMO-0001`, phone `(631) 555-0100` (555-0100 to 555-0199 is reserved for fictional use), `example.com` email and website. No real business names, addresses, phone numbers, or license numbers ship with the installer, ever.
+
+Both files are built into the app (embedded in `SecretLead.Core`), so seeding reads nothing from the install folder. If seeding fails, the reason goes to the status area and the app still opens. The reset script (§16) empties AppData, so the next launch seeds the demo again.
 
 The real, hand-verified `contractor.csv` and the source `.xlsx` county exports it's built from are **strictly development-time references** — used to ground this spec in real data quirks, never bundled, never shipped.
 

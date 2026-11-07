@@ -6,6 +6,9 @@ Every release has a heading `## [X.Y.Z] - YYYY-MM-DD`. Changes waiting for the n
 
 ## [Unreleased]
 
+### New
+- **The Construction demo is added on first run.** When AppData has no entities yet, SecretLead adds the Construction tag file and one fictional record (Example Plumbing & Heating, a 555-01xx phone number, example.com addresses), so there's something to browse right away. The README described this before, but it wasn't built. Both files are built into the app.
+
 ### Fixes
 - **Line breaks no longer lose text.** A quoted CSV value with a line break (a two-line address, say) was stored as-is, and everything after the first line was lost when the records were read back. Each line is now trimmed and the lines are joined with one space, on import and for values typed or pasted by hand.
 - **Re-importing with a different tag file is blocked.** Importing a tag file with other tags under an existing entity name replaced the stored tag file, and the next edit or delete erased the missing fields from every record. Now the Import button stays gray and Status names each tag that differs. The same tags in a different order are blocked too, because the order decides Category and Nickname.

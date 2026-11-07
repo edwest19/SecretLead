@@ -19,12 +19,13 @@ This is a working WinUI 3 / .NET 10 app, not a spec-only repo. Build and test wi
 Current layout:
 - `SecretLead.Core/` — everything that isn't the window. Plain .NET, no Windows dependencies:
   - `Models/` — `EntityRecord`, `TagFileDefinition`, `CsvTable`, `ImportValidationResult`
-  - `Services/` — tag file parsing (`TagFileParser`), AppData read/write (`EntityStore`, `EntityRecordSerializer`), CSV import (`CsvParser`, `CsvImporter`, `FieldNormalizer`, `ConstructionFixups`), export/print (`RecordPrintFormatter`, `PrintHtmlFormatter`)
+  - `Services/` — tag file parsing (`TagFileParser`), AppData read/write (`EntityStore`, `EntityRecordSerializer`, `EntityNames`), CSV import (`CsvParser`, `CsvImporter`, `FieldNormalizer`, `ConstructionFixups`), export/print (`RecordPrintFormatter`, `PrintHtmlFormatter`), first-run demo (`ConstructionDemo`)
+  - `Seed/construction.md`, `Seed/construction.txt` — the bundled Construction tag file and its one fictional record, built into the library and copied into AppData on first run (README.md §11)
 - `SecretLead.Core.Tests/` — MSTest tests for `SecretLead.Core`, plus `RepositoryRulesTests` (Microsoft packages only, no network API in app code)
 - `SecretLead.UI/` — the WinUI 3 app, packaged as MSIX. It calls `SecretLead.Core` for everything except the window:
   - `ViewModels/` — one per page (`MainPageViewModel`, `ImportPageViewModel`, `BrowsePageViewModel`), the hand-rolled MVVM base (`ObservableObject`, `RelayCommand` — see below), and the shared `StatusService`
   - `MainWindow.xaml`, `MainPage.xaml` (app shell: nav rail + content frame), `ImportPage.xaml`, `BrowsePage.xaml` — page files live at the project root, there is no `Views/` folder
-  - `Assets/construction.md` — the bundled default tag file (entity name `Construction`)
+  - `Assets/` — the app's icons and tiles
 - `Directory.Build.props` — the version, shared by every project
 - `global.json` — selects a .NET 10 SDK
 - `CHANGELOG.md` — release notes
