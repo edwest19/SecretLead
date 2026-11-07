@@ -30,8 +30,8 @@ internal static class TestHelper
     public static string ReadRepoFile(params string[] path) =>
         File.ReadAllText(Path.Combine([RepoRoot(), .. path]));
 
-    /// <summary>The bundled Construction tag file, as shipped in the app's Assets folder.</summary>
-    public static string ConstructionTagFileText() => ReadRepoFile("SecretLead.UI", "Assets", "construction.md");
+    /// <summary>The bundled Construction tag file, as it is in the repository (built into SecretLead.Core).</summary>
+    public static string ConstructionTagFileText() => ReadRepoFile("SecretLead.Core", "Seed", "construction.md");
 
     /// <summary>A small two-tag-plus tag file for tests that don't need Construction's twelve tags.</summary>
     public static string PetsTagFileText(params string[] extraTags)

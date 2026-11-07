@@ -4,6 +4,7 @@ using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
+using SecretLead.Services;
 using SecretLead.ViewModels;
 
 // To learn more about WinUI, the WinUI project structure,
@@ -58,6 +59,17 @@ public partial class App : Application
     /// <param name="args">Details about the launch request and process.</param>
     protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
     {
+        // AI-generated (Claude): on first run, with no entities in AppData yet, add the bundled
+        // Construction demo before the browse screen lists entities (README.md §6, §11).
+        try
+        {
+            ConstructionDemo.SeedIfEmpty(new EntityStore());
+        }
+        catch (Exception ex)
+        {
+            Status.SetMessages([$"The Construction demo couldn't be added: {ex.Message}"]);
+        }
+
         Window = new MainWindow();
         DispatcherQueue = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
         Window.Activate();
