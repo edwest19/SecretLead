@@ -19,6 +19,7 @@ Every release has a heading `## [X.Y.Z] - YYYY-MM-DD`. Changes waiting for the n
 - The tag-file, CSV import, record store, print and export code moved into a new library, `SecretLead.Core`, which has no Windows dependencies. The window app moved to `SecretLead.UI` and calls the library.
 - New MSTest tests in `SecretLead.Core.Tests` cover the library, and check that only Microsoft packages are used and that no app code uses a network API. The Build workflow runs them.
 - The version is set once, in `Directory.Build.props` (0.2.0). `global.json` selects a .NET 10 SDK.
+- `docs/file-format.md` specifies the tag file and records file formats exactly, and `FileFormatTests` locks them with known-answer tests. The formats didn't change.
 
 ## [0.1.2] - 2026-07-21
 
