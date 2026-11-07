@@ -46,6 +46,16 @@ public partial class App : Application
     public static StatusService Status { get; } = new();
 
     /// <summary>
+    /// AI-generated (Claude): the one record store, used by every page. It lives in SecretLead's
+    /// own MSIX package data folder (<c>ApplicationData.Current.LocalFolder</c>, which is
+    /// <c>%LOCALAPPDATA%\Packages\&lt;PackageFamilyName&gt;\LocalState</c>), so Windows keeps it
+    /// private to SecretLead and deletes it when SecretLead is uninstalled (README.md §5).
+    /// </summary>
+    public static EntityStore Store => _store ??= new EntityStore(Windows.Storage.ApplicationData.Current.LocalFolder.Path);
+
+    private static EntityStore? _store;
+
+    /// <summary>
     /// Initializes the singleton application object.
     /// </summary>
     public App()
@@ -63,7 +73,7 @@ public partial class App : Application
         // Construction demo before the browse screen lists entities (README.md §6, §11).
         try
         {
-            ConstructionDemo.SeedIfEmpty(new EntityStore());
+            ConstructionDemo.SeedIfEmpty(Store);
         }
         catch (Exception ex)
         {

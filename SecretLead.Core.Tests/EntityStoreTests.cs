@@ -12,6 +12,15 @@ namespace SecretLead.Core.Tests;
 [TestClass]
 public sealed class EntityStoreTests
 {
+    // The app passes its package data folder (README §5); a relative path would land wherever
+    // the process's current folder happens to be.
+    [TestMethod]
+    [DataRow("")]
+    [DataRow("SecretLead")]
+    [DataRow("data/SecretLead")]
+    public void DataFolder_MustBeAFullPath(string folder) =>
+        Assert.ThrowsExactly<ArgumentException>(() => new EntityStore(folder));
+
     [TestMethod]
     public void EmptyStore_HasNoEntities_AndNoRecords()
     {

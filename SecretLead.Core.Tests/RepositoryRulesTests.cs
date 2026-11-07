@@ -80,6 +80,30 @@ public sealed class RepositoryRulesTests
         Assert.IsGreaterThan(0, filesChecked, "Expected to scan the app's source files.");
     }
 
+    [TestMethod]
+    public void AppCode_KeepsRecordsOnlyInThePackageDataFolder()
+    {
+        // README §5: records live in the MSIX package's own data folder, which App.Store gets from
+        // ApplicationData.Current.LocalFolder. Nothing may build its own path under AppData.
+        var root = RepoRoot();
+        var oldLocation = new Regex(@"\bLocalApplicationData\b|\bGetFolderPath\b|%LOCALAPPDATA%|\bLOCALAPPDATA\b");
+        var storeUses = 0;
+
+        foreach (var folder in AppProjectFolders)
+        {
+            foreach (var file in Directory.EnumerateFiles(Path.Combine(root, folder), "*.cs", SearchOption.AllDirectories)
+                         .Where(f => !IsBuildOutput(root, f)))
+            {
+                var code = string.Join("\n", File.ReadAllLines(file).Where(line => !line.TrimStart().StartsWith("//", StringComparison.Ordinal)));
+                Assert.IsFalse(oldLocation.IsMatch(code), $"{Path.GetRelativePath(root, file)} builds a path under AppData itself.");
+                storeUses += Regex.Matches(code, @"new EntityStore\(").Count;
+            }
+        }
+
+        // The window app creates exactly one store, App.Store.
+        Assert.AreEqual(1, storeUses, "Expected exactly one 'new EntityStore(' in the app's code (App.Store).");
+    }
+
     private static IEnumerable<string> BuildFiles(string root) =>
         Directory.EnumerateFiles(root, "*.*", SearchOption.AllDirectories)
             .Where(f => f.EndsWith(".csproj", StringComparison.Ordinal) || f.EndsWith(".props", StringComparison.Ordinal) || f.EndsWith(".targets", StringComparison.Ordinal))

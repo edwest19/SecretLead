@@ -91,7 +91,11 @@ That's the entire grammar: a name-matcher, two positional roles, and a filename 
 
 ## 5. Storage: AppData, entity-name-keyed, global
 
-Everything SecretLead writes lives in the app's sandboxed AppData storage — **GUI-only**, never a location the user browses to or hand-edits directly. Each entity is a **pair** of files:
+Everything SecretLead writes lives in the app's own data folder, which Windows gives the installed MSIX package: `%LOCALAPPDATA%\Packages\<PackageFamilyName>\LocalState` (the app gets it from `ApplicationData.Current.LocalFolder`). It's **GUI-only**, never a location the user browses to or hand-edits directly. "AppData" in this README means this folder.
+
+**Uninstalling SecretLead deletes this folder and every record in it.** Windows removes a package's app data when the package is uninstalled. Run Backup (§14) first, including before uninstalling a pre-release to install a release with the same version. There's no in-app restore yet (§14).
+
+Each entity is a **pair** of files:
 
 - `<EntityName>.md` — the reference copy of the tag file that produced this entity, copied in at Import time (§3).
 - `<EntityName>.txt` — the actual records.
@@ -243,6 +247,7 @@ Classify review findings as:
 
 - [x] **Re-import with a different tag file.** Decided 2026-11-07: an import into an existing entity is blocked unless its tag file has the same tags in the same order as the stored `<EntityName>.md`, and the differing tags are named (§6).
 - [x] **One-click backup out of AppData.** Built: the Backup button (`MainPageViewModel.BackupAsync`) opens a folder picker and copies every `<EntityName>.txt`/`.md` pair from AppData into the chosen folder. This is the one folder picker in the app — it's fine because it only copies files *out* of AppData for safekeeping; it never reads a picked folder's contents back in (that's what Import's two file pickers are for, §3). Worth having given precedent: SecretList's `records.txt` was lost with no recoverable trace after a Windows feature update.
+- [ ] **Restore from a backup.** Backup copies the `.md`/`.txt` files out, but nothing copies them back in, and Import takes a CSV, not a backup `.txt`. Since uninstalling deletes the data folder (§5), a backup can't yet be put back from inside the app.
 - [ ] **Atomic write-then-swap on every save.** Still not built for either app — the one-click backup above is a manual safety net, not protection against a crash mid-write corrupting the live `.txt`/`.md` files.
 - [ ] Splitting the bundled `Construction` demo tag file into separate real-usage tag files (`Construction`/general Home Improvement, `Electrician`, `Plumber`) once real data replaces the demo — future intent, not yet spec'd.
 - [ ] SecretLetter's actual design — input format, output format, whether it reads another Secret-family app's `.txt` file or is fully self-contained.
@@ -269,7 +274,7 @@ Classify review findings as:
 
 Not part of the shipped app itself — tooling for maintainers and end users to run manually from a terminal. Doesn't touch or relax any rule in §2; the app binary still makes zero network calls and has zero NuGet dependencies. These scripts do.
 
-- `scripts\Reset-SecretLeadAppData.ps1` — deletes every stored entity (`<EntityName>.md` / `<EntityName>.txt`) from AppData, resetting SecretLead to first-run state. Existence-of-file is the whole mechanism (§6), so this is a complete, clean reset. Finds the AppData folder by matching the installed package's DisplayName ("SecretLead") rather than a hardcoded path or package identity, since the folder name is derived from the package's Identity Name and Publisher, which can change across builds/signing. Prompts for confirmation by default (supports `-WhatIf`/`-Confirm:$false`); pass `-Force` to skip the prompt. If Windows blocks it as a downloaded script ("running scripts is disabled on this system"), right-click the file → Properties → Unblock, or run `powershell -ExecutionPolicy Bypass -File .\scripts\Reset-SecretLeadAppData.ps1`.
+- `scripts\Reset-SecretLeadAppData.ps1` — deletes every stored entity (`<EntityName>.md` / `<EntityName>.txt`) from AppData, resetting SecretLead to first-run state. Existence-of-file is the whole mechanism (§6), so this is a complete, clean reset. Finds every installed SecretLead package for the current user by its package name (the Identity Name in `SecretLead.UI/Package.appxmanifest`), which stays the same when the publisher changes, so a developer build and a signed release are both found. Clears the `.md`/`.txt` files in each one's data folder, `%LOCALAPPDATA%\Packages\<PackageFamilyName>\LocalState` (§5). Stops if SecretLead is running. Prompts for confirmation by default (supports `-WhatIf`/`-Confirm:$false`); pass `-Force` to skip the prompt. If Windows blocks it as a downloaded script ("running scripts is disabled on this system"), right-click the file → Properties → Unblock, or run `powershell -ExecutionPolicy Bypass -File .\scripts\Reset-SecretLeadAppData.ps1`.
 
 
 ## Installing from GitHub Releases
