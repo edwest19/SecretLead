@@ -6,6 +6,11 @@ Every release has a heading `## [X.Y.Z] - YYYY-MM-DD`. Changes waiting for the n
 
 ## [Unreleased]
 
+### Changed
+- **Records are kept in SecretLead's own package data folder**, `%LOCALAPPDATA%\Packages\<PackageFamilyName>\LocalState`, instead of `%LOCALAPPDATA%\SecretLead` (which Windows was quietly redirecting for the MSIX app). Records saved by earlier builds aren't moved over. **Uninstalling SecretLead deletes them: run Backup first.**
+- `scripts/Reset-SecretLeadAppData.ps1` finds that folder for every installed SecretLead package, and stops if SecretLead is running.
+- The unpackaged launch profile is gone: SecretLead runs only as an MSIX package.
+
 ### New
 - **The Construction demo is added on first run.** When AppData has no entities yet, SecretLead adds the Construction tag file and one fictional record (Example Plumbing & Heating, a 555-01xx phone number, example.com addresses), so there's something to browse right away. The README described this before, but it wasn't built. Both files are built into the app.
 

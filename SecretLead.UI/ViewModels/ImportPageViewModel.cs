@@ -16,7 +16,7 @@ namespace SecretLead.ViewModels;
 /// </summary>
 public sealed class ImportPageViewModel : ObservableObject
 {
-    private readonly EntityStore _entityStore = new();
+    private readonly EntityStore _entityStore = App.Store; // AI-generated (Claude): the one store, in the package data folder (README.md §5).
 
     private string _csvFileName = "No file selected";
     private string _tagFileName = "No file selected";

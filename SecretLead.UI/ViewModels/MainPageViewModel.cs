@@ -22,7 +22,7 @@ public sealed class MainPageViewModel : ObservableObject
     /// <summary>Shared status/validation messages shown in the Status flyout (README.md §3).</summary>
     public StatusService Status => App.Status;
 
-    private readonly EntityStore _entityStore = new();
+    private readonly EntityStore _entityStore = App.Store; // AI-generated (Claude): the one store, in the package data folder (README.md §5).
 
     public MainPageViewModel()
     {

@@ -6,8 +6,9 @@ using SecretLead.Models;
 namespace SecretLead.Services;
 
 /// <summary>
-/// Reads and writes the app's sandboxed AppData storage — the only place
-/// SecretLead ever writes (README.md §5). Each entity is a pair of files,
+/// Reads and writes the app's data folder — the only place SecretLead ever
+/// writes (README.md §5; AI-generated (Claude): the folder is given to the
+/// constructor). Each entity is a pair of files,
 /// keyed only by entity name, with no per-source or per-import-session
 /// isolation:
 /// <list type="bullet">
@@ -21,25 +22,24 @@ public sealed class EntityStore
 {
     private readonly string _rootFolder;
 
-    /// <summary>The AppData folder entities are read from and written to.</summary>
+    /// <summary>The data folder entities are read from and written to.</summary>
     public string RootFolder => _rootFolder;
 
     /// <summary>
-    /// Uses the app's AppData local folder. Deliberately uses plain .NET file
-    /// APIs rather than Windows.Storage.ApplicationData.Current, which
-    /// requires package identity and throws at runtime in an unpackaged,
-    /// self-contained build.
+    /// AI-generated (Claude): uses <paramref name="rootFolder"/> as the data folder. The app passes
+    /// its MSIX package's own data folder (<c>Windows.Storage.ApplicationData.Current.LocalFolder</c>,
+    /// which Windows keeps at <c>%LOCALAPPDATA%\Packages\&lt;PackageFamilyName&gt;\LocalState</c> and
+    /// deletes when SecretLead is uninstalled — README.md §5). Tests pass a temporary folder.
+    /// SecretLead.Core has no Windows dependency, so it never looks the folder up itself.
     /// </summary>
-    public EntityStore()
-        : this(Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "SecretLead"))
+    /// <exception cref="ArgumentException"><paramref name="rootFolder"/> isn't a full path.</exception>
+    public EntityStore(string rootFolder)
     {
-    }
+        if (!Path.IsPathFullyQualified(rootFolder))
+        {
+            throw new ArgumentException($"The data folder must be a full path, not '{rootFolder}'.", nameof(rootFolder));
+        }
 
-    /// <summary>Points at an arbitrary folder — for tests or diagnostics only.</summary>
-    internal EntityStore(string rootFolder)
-    {
         _rootFolder = rootFolder;
     }
 

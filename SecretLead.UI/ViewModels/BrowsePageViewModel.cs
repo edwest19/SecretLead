@@ -63,7 +63,7 @@ public enum BrowseOverlay
 /// </summary>
 public sealed class BrowsePageViewModel : ObservableObject
 {
-    private readonly EntityStore _entityStore = new();
+    private readonly EntityStore _entityStore = App.Store; // AI-generated (Claude): the one store, in the package data folder (README.md §5).
 
     private List<EntityRecord> _allRecords = [];
     private TagFileDefinition? _tagFile;
