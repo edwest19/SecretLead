@@ -4,7 +4,7 @@ Copyright (c) 2026 edwest19
 
 Genetated by Claude.
 
-**Status:** pre-build / spec-first · **License:** MIT · **Platform:** Windows (WinUI 3 / .NET 10, packaged MSIX)
+**Status:** working app; 0.2.0 will be the first MSIX release · **License:** MIT · **Platform:** Windows x64 (WinUI 3 / .NET 10, packaged MSIX)
 
 > This README is written as a **spec**, not just documentation. Any AI (including future Claude sessions) or human contributor should be able to compare its claims with the repository and assess how well each is supported. If code and README ever disagree, report the discrepancy and gather evidence before deciding whether the implementation or documentation needs correction. Never silently drift.
 
@@ -279,7 +279,7 @@ Not part of the shipped app itself — tooling for maintainers and end users to 
 
 ## Installing from GitHub Releases
 
-Each tagged release (`v*`) publishes signed MSIX packages (`x64`, `arm64`), SHA-256 checksums, and build provenance attestations. Packages are built in GitHub Actions and signed with Azure Artifact Signing.
+Each tagged release (`v*`) publishes a signed MSIX package (`x64`), SHA-256 checksums, and build provenance attestations. Packages are built in GitHub Actions and signed with Azure Artifact Signing.
 
 1. Download the `.msix` for your architecture from the Releases page.
 2. Double-click it and choose Install.
