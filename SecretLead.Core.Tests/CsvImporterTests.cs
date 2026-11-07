@@ -77,6 +77,19 @@ public sealed class CsvImporterTests
         Assert.AreEqual("03/04/2024", record.GetValue("Date Adopted"));
     }
 
+    // Bug 1 (evaluation 2026-11-07): a quoted CSV value with a line break was stored as-is, and
+    // everything after the first line was lost when the records were read back.
+    [TestMethod]
+    public void Import_LineBreaksInAValue_BecomeOneSpace()
+    {
+        var tagFile = TagFileParser.Parse(PetsTagFileText("Address"));
+        var table = CsvParser.Parse("Kind,Name,Address\nDog,Rex,\"12 Main St\r\nSuite 4\"\n");
+
+        var record = CsvImporter.Import(tagFile, table)[0];
+
+        Assert.AreEqual("12 Main St Suite 4", record.GetValue("Address"));
+    }
+
     [TestMethod]
     public void Import_WhenColumnsDontMatch_IsRefused()
     {

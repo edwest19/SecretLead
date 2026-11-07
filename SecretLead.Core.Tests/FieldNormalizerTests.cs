@@ -41,4 +41,21 @@ public sealed class FieldNormalizerTests
     [TestMethod]
     public void OtherTags_AreStoredAsIs() =>
         Assert.AreEqual(" 12 Main St ", FieldNormalizer.Normalize("Address", " 12 Main St "));
+
+    // Bug 1 (evaluation 2026-11-07): records are stored one line per field, so a value
+    // can't keep a line break. Each line is trimmed and the lines are joined with one space.
+    [TestMethod]
+    [DataRow("12 Main St\nSuite 4", "12 Main St Suite 4")]
+    [DataRow("1 Elm\r\n\r\nRear", "1 Elm Rear")]
+    [DataRow("a\rb", "a b")]
+    [DataRow("Acme \n  Plumbing\n", "Acme Plumbing")]
+    public void LineBreaksInAnyValue_BecomeOneSpace(string raw, string expected) =>
+        Assert.AreEqual(expected, FieldNormalizer.Normalize("Address", raw));
+
+    [TestMethod]
+    public void LineBreaksInAPhoneOrDate_AreRemovedBeforeFormatting()
+    {
+        Assert.AreEqual("(631) 555-1212", FieldNormalizer.Normalize("Phone", "631\n555-1212"));
+        Assert.AreEqual("03/04/2024", FieldNormalizer.Normalize("Date Issued", "2024-03-04\r\n"));
+    }
 }
