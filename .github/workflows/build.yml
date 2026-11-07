@@ -19,8 +19,12 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
+      # AI-generated (Claude): runs the SecretLead.Core tests; the app project moved to SecretLead.UI/.
+      - name: Test
+        run: dotnet test SecretLead.Core.Tests/SecretLead.Core.Tests.csproj -c Release
+
       - name: Restore
-        run: dotnet restore SecretLead.csproj -r win-x64 -p:Configuration=Release
+        run: dotnet restore SecretLead.UI/SecretLead.UI.csproj -r win-x64 -p:Configuration=Release
 
       - name: Build
-        run: dotnet build SecretLead.csproj -c Release -r win-x64 --no-restore
+        run: dotnet build SecretLead.UI/SecretLead.UI.csproj -c Release -r win-x64 --no-restore

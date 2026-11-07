@@ -10,19 +10,24 @@ There used to be a second document, `SecretLead-PROJECT-BRIEF.md`, describing an
 
 ## Repo status: built, not pre-build
 
-This is a working WinUI 3 / .NET 10 app, not a spec-only repo. Build and run with:
+<!-- AI-generated (Claude): build commands and layout updated for the SecretLead.Core / SecretLead.Core.Tests / SecretLead.UI split. -->
+This is a working WinUI 3 / .NET 10 app, not a spec-only repo. Build and test with:
 
-```
-dotnet build
-dotnet run
-```
+- Tests (any OS, including Linux): `dotnet test SecretLead.Core.Tests/SecretLead.Core.Tests.csproj`
+- The WinUI app (Windows only): `dotnet build SecretLead.UI/SecretLead.UI.csproj -c Release -r win-x64`
 
 Current layout:
-- `Models/` — `EntityRecord`, `TagFileDefinition`, `CsvTable`, `ImportValidationResult`
-- `Services/` — tag file parsing (`TagFileParser`), AppData read/write (`EntityStore`, `EntityRecordSerializer`), CSV import (`CsvParser`, `CsvImporter`, `FieldNormalizer`, `ConstructionFixups`), export/print (`RecordPrintFormatter`, `PrintHtmlFormatter`)
-- `ViewModels/` — one per page (`MainPageViewModel`, `ImportPageViewModel`, `BrowsePageViewModel`), the hand-rolled MVVM base (`ObservableObject`, `RelayCommand` — see below), and the shared `StatusService`
-- `MainWindow.xaml`, `MainPage.xaml` (app shell: nav rail + content frame), `ImportPage.xaml`, `BrowsePage.xaml` — page files live at the project root, there is no `Views/` folder
-- `Assets/construction.md` — the bundled default tag file (entity name `Construction`)
+- `SecretLead.Core/` — everything that isn't the window. Plain .NET, no Windows dependencies:
+  - `Models/` — `EntityRecord`, `TagFileDefinition`, `CsvTable`, `ImportValidationResult`
+  - `Services/` — tag file parsing (`TagFileParser`), AppData read/write (`EntityStore`, `EntityRecordSerializer`), CSV import (`CsvParser`, `CsvImporter`, `FieldNormalizer`, `ConstructionFixups`), export/print (`RecordPrintFormatter`, `PrintHtmlFormatter`)
+- `SecretLead.Core.Tests/` — MSTest tests for `SecretLead.Core`, plus `RepositoryRulesTests` (Microsoft packages only, no network API in app code)
+- `SecretLead.UI/` — the WinUI 3 app, packaged as MSIX. It calls `SecretLead.Core` for everything except the window:
+  - `ViewModels/` — one per page (`MainPageViewModel`, `ImportPageViewModel`, `BrowsePageViewModel`), the hand-rolled MVVM base (`ObservableObject`, `RelayCommand` — see below), and the shared `StatusService`
+  - `MainWindow.xaml`, `MainPage.xaml` (app shell: nav rail + content frame), `ImportPage.xaml`, `BrowsePage.xaml` — page files live at the project root, there is no `Views/` folder
+  - `Assets/construction.md` — the bundled default tag file (entity name `Construction`)
+- `Directory.Build.props` — the version, shared by every project
+- `global.json` — selects a .NET 10 SDK
+- `CHANGELOG.md` — release notes
 - `scripts/Reset-SecretLeadAppData.ps1` — resets AppData to first-run state (README.md §16)
 
 ## Non-negotiables (README.md §2/§15 is the full, authoritative list — this is a reminder, not a substitute)
