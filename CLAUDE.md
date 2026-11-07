@@ -31,6 +31,8 @@ Current layout:
 - `global.json` — selects a .NET 10 SDK
 - `CHANGELOG.md` — release notes
 - `scripts/Reset-SecretLeadAppData.ps1` — resets AppData to first-run state (README.md §16)
+- `scripts/Test-Msix.ps1` — checks a packaged MSIX: identity, self-contained, permissions (used by both workflows)
+- `.github/workflows/build.yml` — every pull request: tests, Windows build, unsigned MSIX packaging; `release.yml` — on a `v*` tag: check, test, package, sign (after approval), publish
 
 ## Non-negotiables (README.md §2/§15 is the full, authoritative list — this is a reminder, not a substitute)
 
@@ -41,6 +43,14 @@ Current layout:
 - No MSIX sandbox workarounds.
 - Never change a file format silently. Both formats are specified in `docs/file-format.md` and locked by the known-answer tests in `FileFormatTests`. Never edit their expected values to make a test pass; a deliberate change needs the owner's approval, a new spec version, and a plan for files already on disk. <!-- AI-generated (Claude) -->
 - Ship one confirmed working change before starting the next — avoid speculative multi-file rewrites.
+
+## Releases <!-- AI-generated (Claude) -->
+
+- Releases only through `.github/workflows/release.yml`, on a pushed `vX.Y.Z` or `vX.Y.Z-rc.N` tag, with the owner's approval of the sign job. Never sign or publish by hand.
+- The version lives in `Directory.Build.props` (`X.Y.Z`), `SecretLead.UI/Package.appxmanifest` (`X.Y.Z.0`) and `CHANGELOG.md` (`## [X.Y.Z] - YYYY-MM-DD`).
+- The manifest's `Publisher` must equal `EXPECTED_SIGNER` in `release.yml`. Workflow actions are pinned to full commit SHAs.
+- Signing trusts one immutable OIDC subject, `repo:edwest19@5809459/SecretLead@1299459679:environment:release` (README "Releases"). Renaming the repo, its owner or the `release` environment breaks signing until the Azure federated credential is updated.
+- Enforced by `ReleaseRulesTests`. Every pull request packages an unsigned MSIX and checks it with `scripts/Test-Msix.ps1`.
 
 ## Sibling projects (not in this repo)
 

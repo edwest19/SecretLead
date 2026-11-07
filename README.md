@@ -277,12 +277,74 @@ Not part of the shipped app itself — tooling for maintainers and end users to 
 - `scripts\Reset-SecretLeadAppData.ps1` — deletes every stored entity (`<EntityName>.md` / `<EntityName>.txt`) from AppData, resetting SecretLead to first-run state. Existence-of-file is the whole mechanism (§6), so this is a complete, clean reset. Finds every installed SecretLead package for the current user by its package name (the Identity Name in `SecretLead.UI/Package.appxmanifest`), which stays the same when the publisher changes, so a developer build and a signed release are both found. Clears the `.md`/`.txt` files in each one's data folder, `%LOCALAPPDATA%\Packages\<PackageFamilyName>\LocalState` (§5). Stops if SecretLead is running. Prompts for confirmation by default (supports `-WhatIf`/`-Confirm:$false`); pass `-Force` to skip the prompt. If Windows blocks it as a downloaded script ("running scripts is disabled on this system"), right-click the file → Properties → Unblock, or run `powershell -ExecutionPolicy Bypass -File .\scripts\Reset-SecretLeadAppData.ps1`.
 
 
-## Installing from GitHub Releases
+## Install
 
-Each tagged release (`v*`) publishes a signed MSIX package (`x64`), SHA-256 checksums, and build provenance attestations. Packages are built in GitHub Actions and signed with Azure Artifact Signing.
+1. Open the [latest release](https://github.com/edwest19/SecretLead/releases/latest) and download `SecretLead-<version>-x64.msix`.
+2. Open the file. Windows installs SecretLead and shows the publisher, Edwin West. The installer is signed, so Windows can confirm who made it and that it hasn't been changed.
+3. Start **SecretLead** from the Start menu. On first run it opens on the Construction demo (§11).
 
-1. Download the `.msix` for your architecture from the Releases page.
-2. Double-click it and choose Install.
-3. Verify (optional): `Get-AuthenticodeSignature .\SecretLead-*.msix`, compare `Get-FileHash` with the `.sha256` file, or run `gh attestation verify <file> -R edwest19/SecretLead`.
+To uninstall, go to **Settings → Apps → Installed apps → SecretLead → Uninstall**. **Uninstalling deletes every record SecretLead stored (§5). Run Backup first.** Windows won't install a package over another one with the same version, so moving from a pre-release to the release of the same version also means uninstalling first, and backing up first.
 
-A brand-new publisher may see a SmartScreen warning at first until reputation builds.
+- The MSIX includes .NET and the Windows App SDK, so nothing else needs to be installed. It runs on 64-bit (x64) Windows.
+- Each release also has a `.sha256` file. To check your download, compare it with the output of `Get-FileHash .\SecretLead-<version>-x64.msix` in PowerShell.
+
+## Building and testing
+
+- Windows, the .NET 10 SDK, and Git. `global.json` selects a .NET 10 SDK.
+- Run the tests (any OS):
+
+  ```
+  dotnet test SecretLead.Core.Tests/SecretLead.Core.Tests.csproj
+  ```
+
+- Build everything, including the WinUI app (Windows only):
+
+  ```
+  dotnet build SecretLead.slnx -c Release
+  ```
+
+- `SecretLead.UI` is packaged as an MSIX (full trust) for a clean install and uninstall. Every pull request packages it, unsigned, with Microsoft's Windows App Development CLI (`winapp pack`), and `scripts/Test-Msix.ps1` checks the package: publisher, version, self-contained (no other packages needed), and no permission except `runFullTrust`.
+
+## Releases
+
+Releases are built, signed and published by `.github/workflows/release.yml`, only when a version tag is pushed.
+
+1. Set the version in **three places**. `ReleaseRulesTests` fails if they disagree.
+   - `Directory.Build.props`: `X.Y.Z`
+   - `SecretLead.UI/Package.appxmanifest`: `X.Y.Z.0`
+   - `CHANGELOG.md`: a heading `## [X.Y.Z] - YYYY-MM-DD`, whose text becomes the release notes
+2. Push a tag `vX.Y.Z`, or `vX.Y.Z-rc.N` for a pre-release.
+3. The workflow then:
+   - checks the tag against the version
+   - runs the tests
+   - packages the MSIX and checks it with `scripts/Test-Msix.ps1`
+   - **waits for the owner's approval** in the GitHub environment `release`
+   - signs the MSIX with Azure Artifact Signing (account `edwest19`, profile `CodeSigning-Apps`, East US)
+   - checks that the signature is valid, timestamped and made by `CN=Edwin West, O=Edwin West, L=Huntington, S=ny, C=US`
+   - publishes the GitHub Release with the MSIX and its `.sha256`
+
+Signing uses OpenID Connect, so no password or key is stored in GitHub. Every action is pinned to an exact commit. The workflows turn off the .NET CLI's and winapp's usage telemetry. The release workflow and `scripts/Test-Msix.ps1` are SecretLetter's, with SecretLead's names.
+
+The repository uses GitHub's **immutable OIDC subject claims** (**Settings → Actions → OIDC → Use immutable subject claim**), so the sign-in token names the repository by its numeric IDs as well as its name. The Azure app registration `SecretLead-GitHubActions-Signing` trusts exactly this subject:
+
+`repo:edwest19@5809459/SecretLead@1299459679:environment:release`
+
+- A different repository that later takes the name `edwest19/SecretLead` can't match it.
+- Renaming this repository, its owner or the `release` environment changes the subject. The Azure federated credential must then be updated to match.
+
+### One-time setup
+
+What signing needs, done once by the owner:
+
+- **Azure:** the app registration `SecretLead-GitHubActions-Signing`, with no certificate and no secret, and one federated credential:
+  - issuer `https://token.actions.githubusercontent.com`
+  - subject exactly the line above
+  - audience `api://AzureADTokenExchange`
+
+  The registration has the role **Artifact Signing Certificate Profile Signer** on the signing account `edwest19`.
+- **GitHub:** the environment `release`, which requires the owner as reviewer and accepts only tags beginning with `v`. It holds three secrets: `AZURE_CLIENT_ID` (the registration's application ID), `AZURE_TENANT_ID` and `AZURE_SUBSCRIPTION_ID`. They are identifiers, not passwords.
+- **GitHub:** **Use immutable subject claim**, as above.
+
+## Version history
+
+See [CHANGELOG.md](CHANGELOG.md).

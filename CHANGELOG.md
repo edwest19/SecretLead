@@ -2,9 +2,9 @@
 
 > AI-generated: this file was written by Claude (Anthropic). SecretLead is a project built with AI-generated code; see [README.md](README.md).
 
-Every release has a heading `## [X.Y.Z] - YYYY-MM-DD`. Changes waiting for the next release are listed under `## [Unreleased]`.
+Every release has a heading `## [X.Y.Z] - YYYY-MM-DD`; the release workflow refuses a tag without one and uses the entry as the release notes.
 
-## [Unreleased]
+## [0.2.0] - 2026-11-07
 
 ### Changed
 - **Records are kept in SecretLead's own package data folder**, `%LOCALAPPDATA%\Packages\<PackageFamilyName>\LocalState`, instead of `%LOCALAPPDATA%\SecretLead` (which Windows was quietly redirecting for the MSIX app). Records saved by earlier builds aren't moved over. **Uninstalling SecretLead deletes them: run Backup first.**
@@ -27,6 +27,7 @@ Every release has a heading `## [X.Y.Z] - YYYY-MM-DD`. Changes waiting for the n
 - The tag-file, CSV import, record store, print and export code moved into a new library, `SecretLead.Core`, which has no Windows dependencies. The window app moved to `SecretLead.UI` and calls the library.
 - New MSTest tests in `SecretLead.Core.Tests` cover the library, and check that only Microsoft packages are used and that no app code uses a network API. The Build workflow runs them.
 - The version is set once, in `Directory.Build.props` (0.2.0). `global.json` selects a .NET 10 SDK.
+- **Releases are signed MSIX packages.** The Build workflow runs the tests, builds the app and packages an unsigned MSIX on every pull request, checked by `scripts/Test-Msix.ps1`. The release workflow, started only by a `v*` tag, checks the version, tests, packages, waits for the owner's approval, signs with Azure Artifact Signing and publishes the MSIX with its SHA-256. Both are SecretLetter's workflows with SecretLead's names; every action is pinned to an exact commit.
 - `docs/file-format.md` specifies the tag file and records file formats exactly, and `FileFormatTests` locks them with known-answer tests. The formats didn't change.
 
 ## [0.1.2] - 2026-07-21
