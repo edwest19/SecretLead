@@ -54,5 +54,4 @@ Current layout:
 
 ## Sibling projects (not in this repo)
 
-- **SecretList** — separate repo, zero shared code, manual-entry-only.
-- **SecretLetter** — a third, unstarted, independent app/concept. Don't build it speculatively.
+- **SecretList** — like SecretLead, but entirely offline with no import: records are typed in by hand. Separate repo, zero shared code. <!-- AI-generated (Claude): SecretLetter removed; it has no relationship to SecretLead. -->

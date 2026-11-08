@@ -23,8 +23,7 @@ That claim — not any single bundled dataset — is the actual product.
 
 ## 1. Relationship to other Secret* apps
 
-- **SecretList** — a separate app, separate repo, **zero shared code**. SecretList is the hand-entry-only tool: the owner types records in one at a time. SecretLead does **not** feed SecretList, replace it, or depend on it. The two apps share only a conceptual approach (tag-file-driven, human-readable tagged-text storage) — nothing else.
-- **SecretLetter** — a third, fully independent app (rough concept only, unstarted). Not a feature of SecretLead, not integrated with it at the code level.
+- **SecretList** — a separate app, separate repo, **zero shared code**. SecretList is like SecretLead, but entirely offline with **no import**: the owner types every record in by hand. SecretLead does **not** feed SecretList, replace it, or depend on it. The two apps share only a conceptual approach (tag-file-driven, human-readable tagged-text storage) — nothing else.
 
 If any prior document (including older revisions of this README, or older revisions of any tag file) used the word "schema," described a folder-picker-driven import, or described SecretLead as feeding SecretList or as a Contractor-only pre-populated database — that description is **superseded**. This file is the current spec.
 
@@ -263,7 +262,6 @@ Classify review findings as:
 - [ ] **Restore from a backup.** Backup copies the `.md`/`.txt` files out, but nothing copies them back in, and Import takes a CSV, not a backup `.txt`. Since uninstalling deletes the data folder (§5), a backup can't yet be put back from inside the app.
 - [ ] **Atomic write-then-swap on every save.** Still not built for either app — the one-click backup above is a manual safety net, not protection against a crash mid-write corrupting the live `.txt`/`.md` files.
 - [ ] Splitting the bundled `Construction` demo tag file into separate real-usage tag files (`Construction`/general Home Improvement, `Electrician`, `Plumber`) once real data replaces the demo — future intent, not yet spec'd.
-- [ ] SecretLetter's actual design — input format, output format, whether it reads another Secret-family app's `.txt` file or is fully self-contained.
 - [ ] Whether any disclaimer mechanism is needed for arbitrary user-defined tag files, or only ever for a licensing-specific demo/dataset.
 - [ ] `SampleData/README.md` — walkthrough of exporting source `.xlsx` data and converting it to CSV, for anyone building their own real dataset against the Construction tag file.
 - [ ] Legal review of any disclaimer language, before any public sale.
